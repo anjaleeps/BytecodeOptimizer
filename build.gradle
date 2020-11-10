@@ -1,0 +1,19 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group 'org.anjalee  '
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.ow2.asm:asm:6.0'
+    implementation 'org.ow2.asm:asm-util:6.0'
+    compile 'commons-io:commons-io:2.8.0'
+}
+
+mainClassName = 'builder.Main'
