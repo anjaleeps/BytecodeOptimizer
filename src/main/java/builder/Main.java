@@ -20,8 +20,5 @@ public class Main {
         System.out.println("Visited Nodes: " + builder.getVisitedCount());
 
         jarHandler.writeJar();
-
-        ClassGraphNode n =
-                GraphBuilder.getNodeByName("org/slf4j/impl/StaticLoggerBinder");
     }
 }

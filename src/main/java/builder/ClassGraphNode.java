@@ -30,6 +30,7 @@ public class ClassGraphNode extends ClassNode {
     private final Set<ClassGraphNode> dependencies = new HashSet<>();
     private boolean visited;
     private byte[] bytes;
+    Pattern pattern;
 
     public ClassGraphNode(String name, byte[] bytes) {
 
@@ -37,6 +38,7 @@ public class ClassGraphNode extends ClassNode {
         this.name = name;
         this.bytes = bytes;
         visited = false;
+        pattern = Pattern.compile("([a-z]\\w+(/|[.]))+((\\w|[$])*)+");
     }
 
     public boolean isVisited() {
@@ -78,7 +80,6 @@ public class ClassGraphNode extends ClassNode {
     @Override
     public ModuleVisitor visitModule(String name, int access, String version) {
 
-        System.out.println(name);
         return new ModuleNodeVisitor();
     }
 
@@ -103,15 +104,16 @@ public class ClassGraphNode extends ClassNode {
         if (desc != null) {
             addDesc(desc);
         }
-        if (name != null) {
-            addInternalName(name);
-        }
     }
 
     @Override
     public void visitInnerClass(String name, String outerName, String innerName, int access) {
 
-        addInternalName(name);
+        if (outerName != null){
+            addInternalName(outerName);
+
+        }
+
         InnerClassNode icn = new InnerClassNode(name, outerName, innerName, access);
         innerClasses.add(icn);
     }
@@ -249,7 +251,6 @@ public class ClassGraphNode extends ClassNode {
 
     public boolean checkStringConstant(String s) {
 
-        Pattern pattern = Pattern.compile("([a-z]\\w+(/|[.]))+((\\w|[$])*)+");
         Matcher matcher = pattern.matcher(s);
 
         if (matcher.matches()) {
