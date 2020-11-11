@@ -78,12 +78,6 @@ public class ClassGraphNode extends ClassNode {
     }
 
     @Override
-    public ModuleVisitor visitModule(String name, int access, String version) {
-
-        return new ModuleNodeVisitor();
-    }
-
-    @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
 
         addDesc(desc);
@@ -263,29 +257,6 @@ public class ClassGraphNode extends ClassNode {
     public void markAsVisited() {
 
         visited = true;
-    }
-
-    public class ModuleNodeVisitor extends ModuleVisitor {
-
-        public ModuleNodeVisitor() {
-
-            super(ASM6);
-        }
-
-        @Override
-        public void visitUse(String service) {
-
-            System.out.println(service);
-        }
-
-        @Override
-        public void visitProvide(String service, String... providers) {
-
-            for (int i = 0; i < providers.length; i++) {
-                System.out.println(providers);
-            }
-        }
-
     }
 
     public class AnnotationNodeVisitor extends AnnotationVisitor {
