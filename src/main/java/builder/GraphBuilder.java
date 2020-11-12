@@ -7,27 +7,35 @@ import java.util.Map;
 
 public class GraphBuilder {
 
-    private static Map<String, ClassGraphNode> nodes;
+    private Map<String, ClassGraphNode> nodes;
     private int visitedCount;
     private ClassGraphNode rootNode;
+    private final GraphVisitor visitor;
 
     public GraphBuilder() {
 
         visitedCount = 0;
         nodes = new HashMap<>();
+        visitor = new GraphVisitor();
     }
 
-    public static void updateNode(String name, ClassGraphNode node) {
+    public void build(){
+
+        buildClassHeirarchy();
+        visitor.visitNode(rootNode);
+    }
+
+    public void updateNode(String name, ClassGraphNode node) {
 
         nodes.put(name, node);
     }
 
-    public static ClassGraphNode getNodeByName(String name) {
+    public ClassGraphNode getNodeByName(String name) {
 
         return nodes.get(name);
     }
 
-    public static int getGraphSize() {
+    public int getGraphSize() {
 
         return nodes.size();
     }
@@ -44,7 +52,7 @@ public class GraphBuilder {
 
     public void addNewNode(String name, byte[] bytes) {
 
-        ClassGraphNode newNode = new ClassGraphNode(name, bytes);
+        ClassGraphNode newNode = new ClassGraphNode(name, bytes, this);
         nodes.put(name, newNode);
     }
 
@@ -58,6 +66,15 @@ public class GraphBuilder {
         rootNode = getNodeByName(rootName);
     }
 
+    public void buildClassHeirarchy(){
+
+        for (String name: nodes.keySet()){
+            ClassGraphNode current = nodes.get(name);
+            current.setSuperClass();
+            current.setInterfaces();
+        }
+    }
+
     public List<ClassGraphNode> getVisitedNodes() {
 
         List<ClassGraphNode> visitedNodes = new ArrayList<>();
@@ -68,8 +85,9 @@ public class GraphBuilder {
                 visitedNodes.add(current);
             }
         }
-        System.out.println(visitedNodes.size());
         return visitedNodes;
     }
+
+
 
 }

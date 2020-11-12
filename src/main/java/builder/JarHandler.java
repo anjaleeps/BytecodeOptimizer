@@ -14,7 +14,7 @@ import java.util.jar.Manifest;
 
 public class JarHandler {
 
-    private GraphBuilder builder;
+    private final GraphBuilder builder;
     private String jarName;
 
     public JarHandler(GraphBuilder builder) {
@@ -79,11 +79,13 @@ public class JarHandler {
 
                     if (entry.getName().endsWith(".class")) {
                         String className = getEntryClassName(entry.getName());
-                        ClassGraphNode classGraphNode = GraphBuilder.getNodeByName(className);
+                        ClassGraphNode classGraphNode = builder.getNodeByName(className);
 
                         if (!classGraphNode.isVisited()) {
                             continue;
                         }
+
+                        builder.countVisited();
                     }
 
                     try(InputStream stream = jar.getInputStream(entry)){

@@ -2,11 +2,11 @@ package builder;
 
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Attribute;
+import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.ModuleVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.TypePath;
 import org.objectweb.asm.signature.SignatureReader;
@@ -17,7 +17,6 @@ import org.objectweb.asm.tree.InnerClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -27,18 +26,21 @@ import static org.objectweb.asm.Opcodes.ASM6;
 
 public class ClassGraphNode extends ClassNode {
 
+    final Pattern pattern;
     private final Set<ClassGraphNode> dependencies = new HashSet<>();
+    private final GraphBuilder builder;
+    private final ClassReader reader;
+    String[] interfaces;
     private boolean visited;
-    private byte[] bytes;
-    Pattern pattern;
 
-    public ClassGraphNode(String name, byte[] bytes) {
+    public ClassGraphNode(String name, byte[] bytes, GraphBuilder builder) {
 
         super(ASM6);
         this.name = name;
-        this.bytes = bytes;
+        this.builder = builder;
+        this.reader = new ClassReader(bytes);
         visited = false;
-        pattern = Pattern.compile("([a-z]\\w+(/|[.]))+((\\w|[$])*)+");
+        pattern = Pattern.compile("([a-zA-Z]\\w+(/|[.]))+(\\w|[$])+");
     }
 
     public boolean isVisited() {
@@ -46,14 +48,28 @@ public class ClassGraphNode extends ClassNode {
         return visited;
     }
 
-    public byte[] getBytes() {
-
-        return bytes;
-    }
-
     public Set<ClassGraphNode> getDependencies() {
 
         return dependencies;
+    }
+
+    public void setSuperClass() {
+
+        if (superName == null) {
+            superName = reader.getSuperName();
+        }
+    }
+
+    public void setInterfaces() {
+
+        if (interfaces == null) {
+            interfaces = reader.getInterfaces();
+        }
+    }
+
+    public void visitClass() {
+
+        reader.accept(this, 0);
     }
 
     @Override
@@ -64,7 +80,7 @@ public class ClassGraphNode extends ClassNode {
         this.access = access;
         this.version = version;
         this.signature = signature;
-        this.interfaces = Arrays.asList(interfaces);
+        this.interfaces = interfaces;
         markAsVisited();
 
         if (signature == null) {
@@ -103,7 +119,7 @@ public class ClassGraphNode extends ClassNode {
     @Override
     public void visitInnerClass(String name, String outerName, String innerName, int access) {
 
-        if (outerName != null){
+        if (outerName != null) {
             addInternalName(outerName);
 
         }
@@ -120,7 +136,6 @@ public class ClassGraphNode extends ClassNode {
             attrs = new ArrayList<>(1);
         }
         attrs.add(attr);
-
     }
 
     @Override
@@ -156,7 +171,7 @@ public class ClassGraphNode extends ClassNode {
     @Override
     public void visitEnd() {
 
-        GraphBuilder.updateNode(this.name, this);
+        builder.updateNode(this.name, this);
 
     }
 
@@ -209,7 +224,6 @@ public class ClassGraphNode extends ClassNode {
                 addInternalName(s.replace('.', '/'));
             }
         }
-
     }
 
     private void addMethodDesc(String desc) {
@@ -237,7 +251,7 @@ public class ClassGraphNode extends ClassNode {
 
     public void addName(String name) {
 
-        ClassGraphNode node = GraphBuilder.getNodeByName(name);
+        ClassGraphNode node = builder.getNodeByName(name);
         if (node != null) {
             dependencies.add(node);
         }
