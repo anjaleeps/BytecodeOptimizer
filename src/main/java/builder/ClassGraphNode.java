@@ -7,6 +7,7 @@ import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.TypePath;
 import org.objectweb.asm.signature.SignatureReader;
@@ -18,6 +19,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -28,9 +30,11 @@ public class ClassGraphNode extends ClassNode {
 
     final Pattern pattern;
     private final Set<ClassGraphNode> dependencies = new HashSet<>();
+    private final List<ClassGraphNode> childNodes = new ArrayList<>();
     private final GraphBuilder builder;
     private final ClassReader reader;
-    String[] interfaces;
+    ClassGraphNode superNode;
+    List<ClassGraphNode> interfaceNodes;
     private boolean visited;
 
     public ClassGraphNode(String name, byte[] bytes, GraphBuilder builder) {
@@ -53,21 +57,34 @@ public class ClassGraphNode extends ClassNode {
         return dependencies;
     }
 
-    public void setSuperClass() {
+    public void addChildNode(ClassGraphNode childNode) {
 
-        if (superName == null) {
-            superName = reader.getSuperName();
-        }
+        childNodes.add(childNode);
+    }
+
+    public List<ClassGraphNode> getChildNodes() {
+
+        return childNodes;
+    }
+
+    public void setSuperNode() {
+
+        superNode = builder.getNodeByName(reader.getSuperName());
     }
 
     public void setInterfaces() {
 
-        if (interfaces == null) {
-            interfaces = reader.getInterfaces();
+        String[] itfs = reader.getInterfaces();
+        interfaceNodes = new ArrayList<>();
+        for (int i = 0; i < itfs.length; i++) {
+            ClassGraphNode itf = builder.getNodeByName(itfs[i]);
+            if (itf != null) {
+                interfaceNodes.add(itf);
+            }
         }
     }
 
-    public void visitClass() {
+    public void visitNode() {
 
         reader.accept(this, 0);
     }
@@ -76,16 +93,11 @@ public class ClassGraphNode extends ClassNode {
     public void visit(int version, int access, String name, String signature, String superName,
                       String[] interfaces) {
 
-        this.superName = superName;
-        this.access = access;
-        this.version = version;
-        this.signature = signature;
-        this.interfaces = interfaces;
         markAsVisited();
 
         if (signature == null) {
             if (superName != null) {
-                addInternalName(superName);
+                addName(superName);
             }
             addInternalNames(interfaces);
         } else {
@@ -381,6 +393,10 @@ public class ClassGraphNode extends ClassNode {
 
             addInternalName(owner);
             addMethodDesc(desc);
+
+            if (opcode == Opcodes.INVOKEVIRTUAL) {
+
+            }
         }
 
         @Override

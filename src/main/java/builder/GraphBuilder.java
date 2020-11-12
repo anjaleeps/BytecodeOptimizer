@@ -2,15 +2,16 @@ package builder;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 public class GraphBuilder {
 
+    private final GraphVisitor visitor;
     private Map<String, ClassGraphNode> nodes;
     private int visitedCount;
     private ClassGraphNode rootNode;
-    private final GraphVisitor visitor;
 
     public GraphBuilder() {
 
@@ -19,7 +20,7 @@ public class GraphBuilder {
         visitor = new GraphVisitor();
     }
 
-    public void build(){
+    public void build() {
 
         buildClassHeirarchy();
         visitor.visitNode(rootNode);
@@ -66,12 +67,21 @@ public class GraphBuilder {
         rootNode = getNodeByName(rootName);
     }
 
-    public void buildClassHeirarchy(){
+    public void buildClassHeirarchy() {
 
-        for (String name: nodes.keySet()){
+        for (String name : nodes.keySet()) {
             ClassGraphNode current = nodes.get(name);
-            current.setSuperClass();
+            current.setSuperNode();
             current.setInterfaces();
+
+            if (current.superNode != null){
+                current.superNode.addChildNode(current);
+            }
+
+            List<ClassGraphNode> intfs = current.interfaceNodes;
+            for (int i = 0; i < intfs.size(); i++){
+                intfs.get(i).addChildNode(current);
+            }
         }
     }
 
@@ -87,7 +97,5 @@ public class GraphBuilder {
         }
         return visitedNodes;
     }
-
-
 
 }
