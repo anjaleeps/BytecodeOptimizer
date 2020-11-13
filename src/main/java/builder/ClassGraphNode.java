@@ -18,6 +18,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -89,6 +90,26 @@ public class  ClassGraphNode extends ClassNode {
     public void visitNode() {
 
         reader.accept(this, 0);
+    }
+
+    public void visitDependencies(){
+
+        for (ClassGraphNode current : dependencies) {
+
+            if (!current.isVisited()) {
+                current.visitNode();
+            }
+        }
+    }
+
+    public void visitChildNodes(){
+
+        for (ClassGraphNode current: childNodes){
+
+            if (!current.isVisited()){
+                current.visitNode();
+            }
+        }
     }
 
     @Override
@@ -186,7 +207,8 @@ public class  ClassGraphNode extends ClassNode {
     public void visitEnd() {
 
         builder.updateNode(this.name, this);
-
+        visitDependencies();
+        visitChildNodes();
     }
 
     public void addType(Type type) {

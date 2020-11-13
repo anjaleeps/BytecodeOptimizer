@@ -8,7 +8,6 @@ import java.util.Map;
 
 public class GraphBuilder {
 
-    private final GraphVisitor visitor;
     private Map<String, ClassGraphNode> nodes;
     private int visitedCount;
     private ClassGraphNode rootNode;
@@ -17,13 +16,12 @@ public class GraphBuilder {
 
         visitedCount = 0;
         nodes = new HashMap<>();
-        visitor = new GraphVisitor();
     }
 
     public void build() {
 
         buildClassHeirarchy();
-        visitor.visitNode(rootNode);
+        rootNode.visitNode();
     }
 
     public void updateNode(String name, ClassGraphNode node) {
@@ -74,14 +72,6 @@ public class GraphBuilder {
             current.setSuperNode();
             current.setInterfaces();
 
-//            if (current.superNode != null){
-//                current.superNode.addChildNode(current);
-//            }
-//
-//            List<ClassGraphNode> intfs = current.interfaceNodes;
-//            for (int i = 0; i < intfs.size(); i++){
-//                intfs.get(i).addChildNode(current);
-//            }
         }
     }
 

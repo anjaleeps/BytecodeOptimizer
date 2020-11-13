@@ -9,10 +9,10 @@ public class Main {
         GraphBuilder builder = new GraphBuilder();
         JarHandler jarHandler = new JarHandler(builder);
 
-        String jarName = "helloWorldMain.jar";
+        String jarName = "helloWorld.jar";
         jarHandler.readJar(jarName);
 
-        String rootName = "user/helloWorldMain/___init";
+        String rootName = "user/helloWorld/___init";
         builder.setRootNode(rootName);
 
         builder.build();
