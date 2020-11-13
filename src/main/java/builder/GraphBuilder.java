@@ -74,28 +74,28 @@ public class GraphBuilder {
             current.setSuperNode();
             current.setInterfaces();
 
-            if (current.superNode != null){
-                current.superNode.addChildNode(current);
-            }
-
-            List<ClassGraphNode> intfs = current.interfaceNodes;
-            for (int i = 0; i < intfs.size(); i++){
-                intfs.get(i).addChildNode(current);
-            }
+//            if (current.superNode != null){
+//                current.superNode.addChildNode(current);
+//            }
+//
+//            List<ClassGraphNode> intfs = current.interfaceNodes;
+//            for (int i = 0; i < intfs.size(); i++){
+//                intfs.get(i).addChildNode(current);
+//            }
         }
     }
 
-    public List<ClassGraphNode> getVisitedNodes() {
-
-        List<ClassGraphNode> visitedNodes = new ArrayList<>();
-
-        for (String name : nodes.keySet()) {
-            ClassGraphNode current = nodes.get(name);
-            if (current.isVisited()) {
-                visitedNodes.add(current);
-            }
-        }
-        return visitedNodes;
-    }
+//    public List<ClassGraphNode> getVisitedNodes() {
+//
+//        List<ClassGraphNode> visitedNodes = new ArrayList<>();
+//
+//        for (String name : nodes.keySet()) {
+//            ClassGraphNode current = nodes.get(name);
+//            if (current.isVisited()) {
+//                visitedNodes.add(current);
+//            }
+//        }
+//        return visitedNodes;
+//    }
 
 }

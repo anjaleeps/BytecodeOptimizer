@@ -7,7 +7,6 @@ import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.TypePath;
 import org.objectweb.asm.signature.SignatureReader;
@@ -26,7 +25,7 @@ import java.util.regex.Pattern;
 
 import static org.objectweb.asm.Opcodes.ASM6;
 
-public class ClassGraphNode extends ClassNode {
+public class  ClassGraphNode extends ClassNode {
 
     final Pattern pattern;
     private final Set<ClassGraphNode> dependencies = new HashSet<>();
@@ -70,16 +69,19 @@ public class ClassGraphNode extends ClassNode {
     public void setSuperNode() {
 
         superNode = builder.getNodeByName(reader.getSuperName());
+        if (superNode != null){
+            superNode.addChildNode(this);
+        }
     }
 
     public void setInterfaces() {
 
-        String[] itfs = reader.getInterfaces();
         interfaceNodes = new ArrayList<>();
-        for (int i = 0; i < itfs.length; i++) {
-            ClassGraphNode itf = builder.getNodeByName(itfs[i]);
+        for (int i = 0; i < reader.getInterfaces().length; i++) {
+            ClassGraphNode itf = builder.getNodeByName(reader.getInterfaces()[i]);
             if (itf != null) {
                 interfaceNodes.add(itf);
+                itf.addChildNode(this);
             }
         }
     }
@@ -337,7 +339,6 @@ public class ClassGraphNode extends ClassNode {
         @Override
         public void visitAttribute(Attribute attr) {
 
-            System.out.println(attr.type);
         }
     }
 
@@ -393,10 +394,6 @@ public class ClassGraphNode extends ClassNode {
 
             addInternalName(owner);
             addMethodDesc(desc);
-
-            if (opcode == Opcodes.INVOKEVIRTUAL) {
-
-            }
         }
 
         @Override
