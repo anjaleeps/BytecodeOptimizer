@@ -85,7 +85,6 @@ public class JarHandler {
                             continue;
                         }
 
-                        builder.countVisited();
                     }
 
                     try(InputStream stream = jar.getInputStream(entry)){
