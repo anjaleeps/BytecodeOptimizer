@@ -1,6 +1,9 @@
 package builder;
 
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.util.ArrayList;
@@ -24,53 +27,75 @@ public class GraphBuilder {
 
         buildClassHierarchy();
         visitNode(rootNode);
+        markMainMethod();
     }
 
-    public void start() {
+    public void markMainMethod() {
 
+        for (MethodNode method : rootNode.methods) {
+
+            if (method.name.equals("main")) {
+                MethodGraphNode methodNode = (MethodGraphNode) method;
+                methodNode.markAsUsed();
+            }
+        }
+        visitForMethods(rootNode);
     }
 
-//    public void visitRootNode() {
-//
-//        DependencyCollector collector = new DependencyCollector(this);
-//        ClassGraphVisitor cv = new ClassGraphVisitor(collector);
-//        rootNode.accept(cv);
-//        updateNode(rootNode, cv, collector);
-//
-//        for (MethodNode method : rootNode.methods) {
-//            MethodGraphNode methodNode = (MethodGraphNode) method;
-//            methodNode.markAsUsed();
-//        }
-//        visitClassNode(rootNode);
-//    }
+    public void visitForMethods(ClassGraphNode node) {
 
-//    public void visitClassNode(ClassGraphNode node){
-//
-//        DependencyCollector collector = new DependencyCollector(this);
-//        if (!node.isVisited()){
-//            ClassGraphVisitor cv = new ClassGraphVisitor(collector);
-//            node.accept(cv);
-//            updateNode(node, cv, collector);
-//        }
-//        ClassGraphVisitor2 cv = new ClassGraphVisitor2(collector);
-//        node.accept(cv);
-//        node.methods = cv.methods;
-//        nodes.put(node.name, node);
-//
-//        for (MethodNode method: node.methods){
-//            for (MethodGraphNode calledMethod: ((MethodGraphNode) method).calledMethods){
-//                ClassGraphNode next = getNodeByName(calledMethod.owner);
-//                MethodGraphNode mn = (MethodGraphNode) calledMethod;
-//                if (mn.isUsed() && !mn.isVisited()){
-//                    visitClassNode(next);
-//                }
-//            }
-//        }
-//    }
+        DependencyCollector collector = new DependencyCollector(this);
+        ClassGraphVisitor2 cv = new ClassGraphVisitor2(collector);
 
-//    public void visitMethods(ClassGraphNode node){
-//
-//    }
+        node.accept(cv);
+        node.methods = cv.methods;
+        nodes.put(node.name, node);
+
+        for (MethodNode methodNode : node.methods) {
+            MethodGraphNode method = (MethodGraphNode) methodNode;
+            if (method.isVisited()) {
+
+                InsnList instructions = method.instructions;
+
+                for (int i = 0; i < instructions.size(); i++) {
+                    AbstractInsnNode insnNode = instructions.get(i);
+
+                    if (insnNode.getType() != AbstractInsnNode.METHOD_INSN) {
+                        continue;
+                    }
+
+                    MethodInsnNode methodInsnNode = (MethodInsnNode) insnNode;
+                    ClassGraphNode owner = getNodeByName(methodInsnNode.owner);
+
+                    if (owner == null) {
+                        continue;
+                    }
+
+                    if (!owner.isVisited()) {
+                        visitNode(owner);
+                    }
+
+                    MethodGraphNode mn = new MethodGraphNode(-1, methodInsnNode.owner,
+                            methodInsnNode.name,
+                            methodInsnNode.desc, null, null);
+                    int index = owner.methods.indexOf(mn);
+
+                    if (index < 0) {
+                        continue;
+                    }
+
+                    MethodGraphNode usedMethod = (MethodGraphNode) owner.methods.get(index);
+                    if (!usedMethod.isUsed()) {
+                        System.out.println(methodInsnNode.owner + " " +methodInsnNode.name);
+                        usedMethod.markAsUsed();
+                        visitForMethods(owner);
+                    }
+                }
+                method.markAsCalledVisited();
+                break;
+            }
+        }
+    }
 
     public void visitNode(ClassGraphNode node) {
 
@@ -79,8 +104,11 @@ public class GraphBuilder {
         node.accept(cv);
         countVisited();
         updateNode(node, cv, collector);
-        visitDependencies(node);
-        visitChildNodes(node);
+//        visitDependencies(node);
+//
+//        if (node.isServiceProvider()) {
+//            visitChildNodes(node);
+//        }
     }
 
     public void updateNode(ClassGraphNode node, ClassNode cv, DependencyCollector collector) {
@@ -106,6 +134,7 @@ public class GraphBuilder {
         for (ClassGraphNode current : node.getChildNodes()) {
 
             if (!current.isVisited()) {
+
                 visitNode(current);
             }
         }
@@ -137,11 +166,6 @@ public class GraphBuilder {
         nodes.put(name, newNode);
     }
 
-    public ClassGraphNode getRootNode() {
-
-        return rootNode;
-    }
-
     public void setRootNode(String rootName) {
 
         rootNode = getNodeByName(rootName);
@@ -161,7 +185,10 @@ public class GraphBuilder {
         ClassGraphNode superNode = getNodeByName(current.getSuperName());
         if (superNode != null) {
             current.setSuperNode(superNode);
-            superNode.addChildNode(current);
+
+            if (superNode.isServiceProvider()) {
+                superNode.addChildNode(current);
+            }
         }
     }
 
@@ -174,11 +201,23 @@ public class GraphBuilder {
 
             if (itf != null) {
                 interfaceNodes.add(itf);
-                itf.addChildNode(current);
+                if (itf.isServiceProvider()) {
+                    itf.addChildNode(current);
+                }
             }
         }
 
         current.setInterfaceNodes(interfaceNodes);
+    }
+
+    public void setServiceProviders(List<String> serviceProviders) {
+
+        for (String name : serviceProviders) {
+            ClassGraphNode providerNode = getNodeByName(name);
+            if (providerNode != null) {
+                providerNode.markAsServiceProvider();
+            }
+        }
     }
 
 }

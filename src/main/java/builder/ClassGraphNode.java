@@ -14,6 +14,7 @@ import static org.objectweb.asm.Opcodes.ASM6;
 public class ClassGraphNode extends ClassNode {
 
     Set<ClassGraphNode> methodDependencies = new HashSet<>();
+    Set<MethodGraphNode> usedMethods = new HashSet<>();
     private List<ClassGraphNode> childNodes = new ArrayList<>();
     private Set<ClassGraphNode> dependencies = new HashSet<>();
     private ClassReader reader;
@@ -21,6 +22,7 @@ public class ClassGraphNode extends ClassNode {
     private List<ClassGraphNode> interfaceNodes;
     private boolean visited;
     private boolean used;
+    private boolean isServiceProvider;
 
     public ClassGraphNode(String name, byte[] bytes) {
 
@@ -29,11 +31,22 @@ public class ClassGraphNode extends ClassNode {
         this.reader = new ClassReader(bytes);
         visited = false;
         used = false;
+        isServiceProvider = false;
     }
 
     public boolean isVisited() {
 
         return visited;
+    }
+
+    public boolean isServiceProvider() {
+
+        return isServiceProvider;
+    }
+
+    public void markAsServiceProvider() {
+
+        isServiceProvider = true;
     }
 
     public void addChildNode(ClassGraphNode childNode) {
@@ -74,9 +87,6 @@ public class ClassGraphNode extends ClassNode {
     public void setSuperNode(ClassGraphNode superNode) {
 
         this.superNode = superNode;
-        if (superNode != null) {
-            superNode.addChildNode(this);
-        }
     }
 
     public String[] getInterfaceNames() {
@@ -95,6 +105,10 @@ public class ClassGraphNode extends ClassNode {
         ClassNode cn = (ClassNode) cv;
         cn.name = name;
         cn.methods = methods;
+
+        if (cn instanceof ClassGraphVisitor) {
+            ((ClassGraphVisitor) cn).usedMethods = usedMethods;
+        }
         reader.accept(cn, 0);
     }
 
@@ -103,7 +117,7 @@ public class ClassGraphNode extends ClassNode {
         visited = true;
     }
 
-    public void markAsUsed(){
+    public void markAsUsed() {
 
         used = true;
     }

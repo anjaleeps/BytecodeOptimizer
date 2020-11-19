@@ -1,7 +1,6 @@
 package builder;
 
 import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
@@ -10,7 +9,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -20,6 +19,7 @@ public class ClassGraphVisitor extends ClassNode {
 
     private DependencyCollector collector;
     private String name;
+    Set<MethodGraphNode> usedMethods = new HashSet<>();
 
     public ClassGraphVisitor(DependencyCollector collector) {
 
@@ -85,6 +85,8 @@ public class ClassGraphVisitor extends ClassNode {
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
 
         MethodGraphNode mn = new MethodGraphNode(access, this.name, name, desc, signature, exceptions);
+        mn.setCollector(collector);
+
         methods.add(mn);
         return null;
     }

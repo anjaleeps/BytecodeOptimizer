@@ -6,7 +6,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
@@ -30,11 +32,21 @@ public class JarHandler {
         try (JarFile jar = new JarFile(file)) {
             Enumeration<JarEntry> entries = jar.entries();
 
+            List<String> serviceProviders = new ArrayList<>();
+
             while (entries.hasMoreElements()) {
                 JarEntry entry = entries.nextElement();
 
                 try (InputStream stream = jar.getInputStream(entry)) {
                     byte[] bytes = IOUtils.toByteArray(stream);
+
+                    if (!entry.isDirectory() && entry.getName().contains("META-INF/services/")) {
+
+                        String providerName = entry.getName();
+                        int i = providerName.lastIndexOf('/');
+                        providerName = providerName.substring(i + 1);
+                        serviceProviders.add(providerName.replace(".", "/"));
+                    }
 
                     if (entry.getName().endsWith(".class")) {
                         String className = getEntryClassName(entry.getName());
@@ -45,6 +57,9 @@ public class JarHandler {
                     System.out.println("Cannot read entry");
                 }
             }
+
+            builder.setServiceProviders(serviceProviders);
+
         } catch (IOException e) {
             System.out.println("Cannot read Jar file");
         }
@@ -67,11 +82,9 @@ public class JarHandler {
 
         try (JarFile jar = new JarFile(file)) {
 
-            Manifest jarManifest = jar.getManifest();
-            try (JarOutputStream newJar = new JarOutputStream(new FileOutputStream("modified.jar"))){
+            try (JarOutputStream newJar = new JarOutputStream(new FileOutputStream("modified.jar"))) {
                 byte[] buffer = new byte[1024];
                 int bytesRead;
-
 
                 Enumeration<JarEntry> entries = jar.entries();
                 while (entries.hasMoreElements()) {
@@ -84,22 +97,19 @@ public class JarHandler {
                         if (!classGraphNode.isVisited()) {
                             continue;
                         }
-
                     }
 
-                    try(InputStream stream = jar.getInputStream(entry)){
+                    try (InputStream stream = jar.getInputStream(entry)) {
                         newJar.putNextEntry(entry);
 
                         while ((bytesRead = stream.read(buffer)) != -1) {
                             newJar.write(buffer, 0, bytesRead);
                         }
-                    }
-                    catch(IOException e){
+                    } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }
-            }
-            catch (IOException e){
+            } catch (IOException e) {
                 e.printStackTrace();
             }
 

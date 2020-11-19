@@ -6,7 +6,6 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.TypePath;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.util.List;
@@ -75,7 +74,7 @@ public class GraphVisitor extends ClassNode {
         if (value instanceof Type) {
             collector.addType((Type) value);
         }
-        FieldNode fn = new FieldNode(access, name, desc, signature, value);
+//        FieldNode fn = new FieldNode(access, name, desc, signature, value);
         return new FieldNodeVisitor(collector);
     }
 
@@ -83,6 +82,7 @@ public class GraphVisitor extends ClassNode {
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
 
         MethodGraphNode mn = new MethodGraphNode(access, this.name, name, desc, signature, exceptions);
+        mn.setCollector(collector);
         methods.add(mn);
 
         if (signature == null) {
@@ -92,7 +92,7 @@ public class GraphVisitor extends ClassNode {
         }
         collector.addInternalNames(exceptions);
 
-        return new MethodNodeVisitor(collector);
+        return null;
     }
 
     @Override
