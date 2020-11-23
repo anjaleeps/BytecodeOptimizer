@@ -1,5 +1,6 @@
 package builder;
 
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
@@ -13,13 +14,16 @@ import java.util.Map;
 
 public class GraphBuilder {
 
+    static int visitedMethodCount;
     private Map<String, ClassGraphNode> nodes;
     private int visitedCount;
+    private int usedCount;
     private ClassGraphNode rootNode;
 
     public GraphBuilder() {
 
         visitedCount = 0;
+        usedCount = 0;
         nodes = new HashMap<>();
     }
 
@@ -28,6 +32,7 @@ public class GraphBuilder {
         buildClassHierarchy();
         visitNode(rootNode);
         markMainMethod();
+        System.out.println("visited methods: " + GraphBuilder.visitedMethodCount);
     }
 
     public void markMainMethod() {
@@ -53,6 +58,7 @@ public class GraphBuilder {
 
         for (MethodNode methodNode : node.methods) {
             MethodGraphNode method = (MethodGraphNode) methodNode;
+
             if (method.isVisited()) {
 
                 InsnList instructions = method.instructions;
@@ -71,29 +77,71 @@ public class GraphBuilder {
                         continue;
                     }
 
-                    if (!owner.isVisited()) {
-                        visitNode(owner);
-                    }
-
                     MethodGraphNode mn = new MethodGraphNode(-1, methodInsnNode.owner,
                             methodInsnNode.name,
                             methodInsnNode.desc, null, null);
-                    int index = owner.methods.indexOf(mn);
 
-                    if (index < 0) {
-                        continue;
+                    checkUsedMethod(owner, mn);
+                    if (methodInsnNode.getOpcode() == Opcodes.INVOKEVIRTUAL || methodInsnNode.getOpcode() == Opcodes.INVOKEINTERFACE){
+                        checkChildsForUsedMethod(owner, mn);
                     }
-
-                    MethodGraphNode usedMethod = (MethodGraphNode) owner.methods.get(index);
-                    if (!usedMethod.isUsed()) {
-                        System.out.println(methodInsnNode.owner + " " +methodInsnNode.name);
-                        usedMethod.markAsUsed();
-                        visitForMethods(owner);
-                    }
+                    checkInterfacesForUsedMethods(owner, mn);
                 }
-                method.markAsCalledVisited();
-                break;
+                method.markUsedAsVisited();
             }
+        }
+    }
+
+    public void checkUsedMethod(ClassGraphNode owner, MethodGraphNode mn) {
+
+        if (!owner.isVisited()) {
+            visitNode(owner);
+        }
+
+        int index = owner.methods.indexOf(mn);
+
+        if (index < 0) {
+            checkParentForUsedMethod(owner, mn);
+            return;
+        }
+
+        owner.markAsUsed();
+        visitMethodOwnerNode(owner, index);
+    }
+
+    public void checkParentForUsedMethod(ClassGraphNode owner, MethodGraphNode mn){
+        ClassGraphNode superNode = owner.getSuperNode();
+        if (superNode != null) {
+            mn.owner = superNode.name;
+            checkUsedMethod(superNode, mn);
+        }
+    }
+
+    public void checkInterfacesForUsedMethods(ClassGraphNode owner, MethodGraphNode mn){
+
+        for (ClassGraphNode interfaceNode : owner.getInterfaceNodes()){
+
+            mn.owner = interfaceNode.name;
+           checkUsedMethod(interfaceNode, mn);
+        }
+    }
+
+    public void checkChildsForUsedMethod(ClassGraphNode owner, MethodGraphNode mn) {
+
+        for (ClassGraphNode childNode : owner.getChildNodes()) {
+
+            mn.owner = childNode.name;
+            checkUsedMethod(childNode, mn);
+        }
+    }
+
+    public void visitMethodOwnerNode(ClassGraphNode owner, int methodIndex) {
+
+        MethodGraphNode usedMethod = (MethodGraphNode) owner.methods.get(methodIndex);
+        if (!usedMethod.isUsed()) {
+
+            usedMethod.markAsUsed();
+            visitForMethods(owner);
         }
     }
 
@@ -102,8 +150,8 @@ public class GraphBuilder {
         DependencyCollector collector = new DependencyCollector(this);
         GraphVisitor cv = new GraphVisitor(collector);
         node.accept(cv);
-        countVisited();
         updateNode(node, cv, collector);
+        countVisited();
 //        visitDependencies(node);
 //
 //        if (node.isServiceProvider()) {
@@ -155,9 +203,19 @@ public class GraphBuilder {
         visitedCount++;
     }
 
+    public void countUsed() {
+
+        usedCount++;
+    }
+
     public int getVisitedCount() {
 
         return visitedCount;
+    }
+
+    public int getUsedCount() {
+
+        return usedCount;
     }
 
     public void addNewNode(String name, byte[] bytes) {
@@ -169,6 +227,7 @@ public class GraphBuilder {
     public void setRootNode(String rootName) {
 
         rootNode = getNodeByName(rootName);
+        rootNode.markAsUsed();
     }
 
     public void buildClassHierarchy() {
@@ -185,10 +244,8 @@ public class GraphBuilder {
         ClassGraphNode superNode = getNodeByName(current.getSuperName());
         if (superNode != null) {
             current.setSuperNode(superNode);
+            superNode.addChildNode(current);
 
-            if (superNode.isServiceProvider()) {
-                superNode.addChildNode(current);
-            }
         }
     }
 
@@ -201,9 +258,7 @@ public class GraphBuilder {
 
             if (itf != null) {
                 interfaceNodes.add(itf);
-                if (itf.isServiceProvider()) {
-                    itf.addChildNode(current);
-                }
+                itf.addChildNode(current);
             }
         }
 

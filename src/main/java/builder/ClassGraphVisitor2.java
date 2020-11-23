@@ -30,6 +30,7 @@ public class ClassGraphVisitor2 extends ClassNode {
         if (mn.isUsed() && !mn.isVisited()) {
 
             mn.markAsVisited();
+            GraphBuilder.visitedMethodCount += 1;
 
             return mn;
         }

@@ -45,7 +45,7 @@ public class MethodGraphNode extends MethodNode {
         visited = true;
     }
 
-    public void markAsCalledVisited(){
+    public void markUsedAsVisited(){
 
         calledVisited = true;
     }
@@ -100,7 +100,7 @@ public class MethodGraphNode extends MethodNode {
     public void visitTypeInsn(int opcode, String type) {
 
         collector.addType(Type.getObjectType(type));
-        System.out.println(type);
+//        System.out.println(type);
         super.visitTypeInsn(opcode, type);
     }
 
@@ -109,6 +109,7 @@ public class MethodGraphNode extends MethodNode {
 
         collector.addInternalName(owner);
         collector.addDesc(desc);
+//        System.out.println("field " + owner + " " + name + " " + desc);
         super.visitFieldInsn(opcode, owner, name, desc);
     }
 
@@ -151,6 +152,7 @@ public class MethodGraphNode extends MethodNode {
     public void visitLocalVariable(String name, String desc, String signature, Label start, Label end, int index) {
 
         collector.addTypeSignature(signature);
+//        System.out.println("local " + name + " " + desc);
         super.visitLocalVariable(name, desc, signature, start, end, index);
     }
 

@@ -94,9 +94,10 @@ public class JarHandler {
                         String className = getEntryClassName(entry.getName());
                         ClassGraphNode classGraphNode = builder.getNodeByName(className);
 
-                        if (!classGraphNode.isVisited()) {
+                        if (!classGraphNode.isUsed()) {
                             continue;
                         }
+                        builder.countUsed();
                     }
 
                     try (InputStream stream = jar.getInputStream(entry)) {

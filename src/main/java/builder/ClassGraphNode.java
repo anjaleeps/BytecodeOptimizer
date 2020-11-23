@@ -39,6 +39,11 @@ public class ClassGraphNode extends ClassNode {
         return visited;
     }
 
+    public boolean isUsed() {
+
+        return used;
+    }
+
     public boolean isServiceProvider() {
 
         return isServiceProvider;
@@ -89,6 +94,11 @@ public class ClassGraphNode extends ClassNode {
         this.superNode = superNode;
     }
 
+    public ClassGraphNode getSuperNode(){
+
+        return superNode;
+    }
+
     public String[] getInterfaceNames() {
 
         return reader.getInterfaces();
@@ -97,6 +107,11 @@ public class ClassGraphNode extends ClassNode {
     public void setInterfaceNodes(List<ClassGraphNode> interfaceNodes) {
 
         this.interfaceNodes = interfaceNodes;
+    }
+
+    public List<ClassGraphNode> getInterfaceNodes(){
+
+        return interfaceNodes;
     }
 
     @Override
