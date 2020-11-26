@@ -126,7 +126,6 @@ public class DependencyCollector {
 
         ClassGraphNode node = builder.getNodeByName(name);
         if (node != null) {
-            node.markAsUsed();
             dependencies.add(node);
         }
     }

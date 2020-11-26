@@ -1,6 +1,7 @@
 package builder;
 
 import org.apache.commons.io.IOUtils;
+import org.objectweb.asm.tree.MethodNode;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -103,6 +104,7 @@ public class JarHandler {
                         if (!classGraphNode.isUsed()) {
                             continue;
                         }
+
                         builder.countUsed();
                     }
 

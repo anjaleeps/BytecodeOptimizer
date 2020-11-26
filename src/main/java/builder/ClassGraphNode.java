@@ -117,6 +117,7 @@ public class ClassGraphNode extends ClassNode {
 
     /**
      * accepts a ClassVisitor object and pass it to the accept method of ClassReader
+     *
      **/
     @Override
     public void accept(ClassVisitor cv) {

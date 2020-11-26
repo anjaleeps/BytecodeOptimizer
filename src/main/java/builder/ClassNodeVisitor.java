@@ -39,7 +39,8 @@ public class ClassNodeVisitor extends ClassNode {
     }
 
     /**
-     * Visit class's super class and implemented interfaces to the list of used dependency classes*/
+     * Visit class's super class and implemented interfaces to the list of used dependency classes
+     * */
     @Override
     public void visit(int version, int access, String name, String signature, String superName,
                       String[] interfaces) {

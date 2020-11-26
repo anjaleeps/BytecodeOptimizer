@@ -15,7 +15,7 @@ import static org.objectweb.asm.Opcodes.ASM6;
 /**
  * A class representing a node for each method inside a ClassGraphNode.
  * Can act as a method node and a method node visitor
- * */
+ */
 public class MethodGraphNode extends MethodNode {
 
     String owner;
@@ -51,8 +51,8 @@ public class MethodGraphNode extends MethodNode {
 
     /**
      * Mark the method when every method call made inside the current method node is visited
-     * */
-    public void markAsCalledVisited(){
+     */
+    public void markAsCalledVisited() {
 
         calledVisited = true;
     }
@@ -67,7 +67,7 @@ public class MethodGraphNode extends MethodNode {
         return visited;
     }
 
-    public boolean isCalledVisited(){
+    public boolean isCalledVisited() {
 
         return calledVisited;
     }
@@ -130,11 +130,11 @@ public class MethodGraphNode extends MethodNode {
     @Override
     public void visitInvokeDynamicInsn(String name, String desc, Handle bsm, Object... bsmArgs) {
 
-//        collector.addMethodDesc(desc);
-//        collector.addConstant(bsm);
-//        for (int i = 0; i < bsmArgs.length; i++) {
-//            collector.addConstant(bsmArgs[i]);
-//        }
+        collector.addMethodDesc(desc);
+        collector.addConstant(bsm);
+        for (int i = 0; i < bsmArgs.length; i++) {
+            collector.addConstant(bsmArgs[i]);
+        }
         super.visitInvokeDynamicInsn(name, desc, bsm, bsmArgs);
     }
 
@@ -162,9 +162,9 @@ public class MethodGraphNode extends MethodNode {
     @Override
     public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {
 
-//        if (type != null) {
-//            collector.addInternalName(type);
-//        }
+        if (type != null) {
+            collector.addInternalName(type);
+        }
         super.visitTryCatchBlock(start, end, handler, type);
     }
 

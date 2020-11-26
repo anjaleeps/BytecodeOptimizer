@@ -1,8 +1,10 @@
 package builder;
 
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -13,7 +15,7 @@ import java.util.Map;
 
 /**
  * A class to handle the graph creation and visiting
- * */
+ */
 public class GraphBuilder {
 
     static int visitedMethodCount;
@@ -35,12 +37,14 @@ public class GraphBuilder {
 
         buildClassHierarchy();
         visitNode(rootNode);
+        completeNodeVisit(rootNode);
         markMainMethod();
+        findLinkedMethods(rootNode);
     }
 
     /**
      * Mark the main method of the root class as used
-     * */
+     */
     public void markMainMethod() {
 
         for (MethodNode method : rootNode.methods) {
@@ -50,23 +54,14 @@ public class GraphBuilder {
                 methodNode.markAsUsed();
             }
         }
-        visitForMethods(rootNode);
     }
 
     /**
      * Visit the class for used methods and link methods called inside a used method to the used method
-     * */
-    public void visitForMethods(ClassGraphNode node) {
+     */
+    public void findLinkedMethods(ClassGraphNode node) {
 
-        DependencyCollector collector = new DependencyCollector(this);
-        ClassVisitorForMethods cv = new ClassVisitorForMethods(collector);
-
-        //Visit the ClassGraphNode for the second time using the ClassVisitorForMethods
-        node.accept(cv);
-        node.methods = cv.methods;
-        node.setDependencies(collector.getDependencies());
-        nodes.put(node.name, node);
-        visitDependencies(node);
+        visitNodeForMethods(node);
 
         for (MethodNode methodNode : node.methods) {
             MethodGraphNode method = (MethodGraphNode) methodNode;
@@ -79,28 +74,59 @@ public class GraphBuilder {
                 for (int i = 0; i < instructions.size(); i++) {
                     AbstractInsnNode insnNode = instructions.get(i);
 
-                    if (insnNode.getType() != AbstractInsnNode.METHOD_INSN) {
-                        continue;
+                    if (insnNode.getType() == AbstractInsnNode.METHOD_INSN) {
+                        visitMethodInsn((MethodInsnNode) insnNode, method);
+                    } else if (insnNode.getType() == AbstractInsnNode.INVOKE_DYNAMIC_INSN) {
+                        visitInvokeDynamicInsn((InvokeDynamicInsnNode) insnNode, method);
                     }
+                }
+            }
+        }
+    }
 
-                    MethodInsnNode methodInsnNode = (MethodInsnNode) insnNode;
-                    ClassGraphNode owner = getNodeByName(methodInsnNode.owner);
+    public void visitMethodInsn(MethodInsnNode methodInsnNode, MethodGraphNode method) {
 
-                    //check if called method belongs to a Java library class
-                    if (owner == null) {
-                        continue;
-                    }
+        ClassGraphNode owner = getNodeByName(methodInsnNode.owner);
 
-                    //if the called method instantiate an object, add it's class name to the list of initialized classes
-                    if (methodInsnNode.name.equals("<init>")) {
-                        instantiatedClasses.add(methodInsnNode.owner);
-                    }
+        //check if called method belongs to a Java library class
+        if (owner == null) {
+            return;
+        }
 
-                    //Create MethodGraphNode for the method called inside the current method
-                    MethodGraphNode mn = new MethodGraphNode(-1, methodInsnNode.owner,
-                            methodInsnNode.name, methodInsnNode.desc, null, null);
+        //if the called method instantiate an object, add it's class name to the list of initialized classes
+        if (methodInsnNode.name.equals("<init>")) {
+            instantiatedClasses.add(methodInsnNode.owner);
+        }
 
-                    checkUsedMethod(owner, mn, method);
+        //Create MethodGraphNode for the method called inside the current method
+        MethodGraphNode mn = new MethodGraphNode(-1, methodInsnNode.owner,
+                methodInsnNode.name, methodInsnNode.desc, null, null);
+
+        checkUsedMethod(owner, mn, method);
+        checkChildrenForUsedMethod(owner, mn, method);
+        checkInterfacesForUsedMethods(owner, mn, method);
+    }
+
+    public void visitInvokeDynamicInsn(InvokeDynamicInsnNode invokeDynamicInsnNode, MethodGraphNode method) {
+
+        Object[] bsmArgs = invokeDynamicInsnNode.bsmArgs;
+
+        for (int j = 0; j < bsmArgs.length; j++) {
+
+            if (bsmArgs[j] instanceof Handle) {
+                Handle handle = (Handle) bsmArgs[j];
+                ClassGraphNode owner = getNodeByName(handle.getOwner());
+
+                if (owner == null) {
+                    continue;
+                }
+
+                MethodGraphNode mn = new MethodGraphNode(-1, handle.getOwner(), handle.getName(),
+                        handle.getDesc(), null, null);
+
+                checkUsedMethod(owner, mn, method);
+
+                if (!mn.name.contains("lambda")) {
                     checkChildrenForUsedMethod(owner, mn, method);
                     checkInterfacesForUsedMethods(owner, mn, method);
                 }
@@ -110,7 +136,7 @@ public class GraphBuilder {
 
     /**
      * Check if the called method is defined inside its owner class
-     * */
+     */
     public void checkUsedMethod(ClassGraphNode owner, MethodGraphNode mn, MethodGraphNode current) {
 
         if (!owner.isVisited()) {
@@ -126,24 +152,28 @@ public class GraphBuilder {
             return;
         }
 
-        owner.markAsUsed();
+        if (!owner.isUsed()) {
+
+            owner.markAsUsed();
+            completeNodeVisit(owner);
+        }
+
         visitMethodOwnerNode(owner, index, current);
     }
 
     /**
      * When the class the called method was called with does not define the called method,
      * check if its parent node defines the class
-     *
+     * <p>
      * Ex:
      * class Foo {
-     *     public void read(){}
+     * public void read(){}
      * }
      * class Bar extends Foo{}
-     *
+     * <p>
      * Bar bar = new Bar()
      * bar.read()
-     *
-     * */
+     */
     public void checkParentForUsedMethod(ClassGraphNode owner, MethodGraphNode mn, MethodGraphNode current) {
 
         ClassGraphNode superNode = owner.getSuperNode();
@@ -156,8 +186,7 @@ public class GraphBuilder {
     /**
      * If an interface implemented by the owner of the called class defines the called method, mark it as used inside
      * the interface to preserve it from being removed
-     *
-     * */
+     */
     public void checkInterfacesForUsedMethods(ClassGraphNode owner, MethodGraphNode mn, MethodGraphNode current) {
 
         for (ClassGraphNode interfaceNode : owner.getInterfaceNodes()) {
@@ -169,43 +198,42 @@ public class GraphBuilder {
 
     /**
      * Check if the called method is defined inside a child method of the owner class, since which method is called
-     * is decided at the runtime
-     *
+     * is resolved at the runtime
+     * <p>
      * Ex:
-     *
+     * <p>
      * class Foo {
-     *     public void read()
+     * public void read()
      * }
-     *
+     * <p>
      * class Bar extends Foo{
-     *     public void read()
+     * public void read()
      * }
-     *
+     * <p>
      * Scenario 1:
-     *
+     * <p>
      * Class Main {
-     *     public void main(){
-     *         Foo foo = new Bar()
-     *         foo.read()
-     *     }
+     * public void main(){
+     * Foo foo = new Bar()
+     * foo.read()
      * }
-     *
+     * }
+     * <p>
      * Scenario 2:
-     *
+     * <p>
      * Class Baz {
-     *     public void do(Foo foo){
-     *         foo.read()
-     *     }
+     * public void do(Foo foo){
+     * foo.read()
      * }
-     *
+     * }
+     * <p>
      * Class Main {
-     *     public void main(){
-     *         Baz baz = new Baz()
-     *         baz.do(new Bar())
-     *     }
+     * public void main(){
+     * Baz baz = new Baz()
+     * baz.do(new Bar())
      * }
-     *
-     * */
+     * }
+     */
     public void checkChildrenForUsedMethod(ClassGraphNode owner, MethodGraphNode mn, MethodGraphNode current) {
 
         for (ClassGraphNode childNode : owner.getChildNodes()) {
@@ -215,35 +243,34 @@ public class GraphBuilder {
             if (instantiatedClasses.contains(childNode.name)) {
                 mn.owner = childNode.name;
                 checkUsedMethod(childNode, mn, current);
+            } else if (owner.isServiceProvider()) {
+                mn.owner = childNode.name;
+                checkUsedMethod(childNode, mn, current);
             }
         }
     }
 
     /**
-     * Get the MethodGraphNe object of the called method from the method list of its owner
-     * Link the called method to the current calle method as a called method
-     * Visit the owner class of the used method if it is newly marked as used
-     * */
+     * Get the MethodGraphNe object of the called method from the method list of its owner.
+     * Link the called method to the current calle method as a called method.
+     * Visit the owner class of the used method if it is newly marked as used.
+     */
     public void visitMethodOwnerNode(ClassGraphNode owner, int methodIndex, MethodGraphNode current) {
 
         MethodGraphNode usedMethod = (MethodGraphNode) owner.methods.get(methodIndex);
         current.calledMethods.add(usedMethod);
 
-        if (!owner.isVisited()){
-            System.out.println(owner.name);
-        }
-
         if (!usedMethod.isUsed()) {
 
             usedMethod.markAsUsed();
-            visitForMethods(owner);
+            findLinkedMethods(owner);
         }
     }
 
     /**
-     * Visit the static blocks used inside a class
-     * */
-    public void visitClinit(ClassGraphNode node) {
+     * Mark the static blocks used inside a class
+     **/
+    public void markStaticBlocks(ClassGraphNode node) {
 
         //Create a MethodGraphNode for a potential static block
         MethodGraphNode mn = new MethodGraphNode(-1, node.name, "<clinit>", "()V", null, null);
@@ -253,24 +280,35 @@ public class GraphBuilder {
         if (i >= 0) {
             mn = (MethodGraphNode) node.methods.get(i);
             mn.markAsUsed();
-
-            if (node.isUsed()) {
-                visitForMethods(node);
-            }
         }
     }
 
     /**
      * Visit the ClassGraphNode for the first time using ClassNodeVisitor
-     * */
+     **/
     public void visitNode(ClassGraphNode node) {
 
         DependencyCollector collector = new DependencyCollector(this);
         ClassNodeVisitor cv = new ClassNodeVisitor(collector);
         node.accept(cv);
+        markStaticBlocks(node);
         updateNode(node, cv, collector);
         countVisited();
-        visitClinit(node);
+    }
+
+    public void visitNodeForMethods(ClassGraphNode node) {
+
+        DependencyCollector collector = new DependencyCollector(this);
+        ClassVisitorForMethods cv = new ClassVisitorForMethods(collector);
+
+        //Visit the ClassGraphNode for the second time using the ClassVisitorForMethods
+        node.accept(cv);
+        updateNode(node, cv, collector);
+        visitDependencies(node);
+    }
+
+    public void completeNodeVisit(ClassGraphNode node) {
+
         visitDependencies(node);
 
         //Visit the class's child nodes only if the class is a service provider
@@ -280,19 +318,8 @@ public class GraphBuilder {
     }
 
     /**
-     * Pass the information gathered by the ClassVisitor to the ClassGraphNode object
-     * */
-    public void updateNode(ClassGraphNode node, ClassNode cv, DependencyCollector collector) {
-
-        node.setDependencies(collector.getDependencies());
-        node.methods = cv.methods;
-        node.markAsVisited();
-        nodes.put(node.name, node);
-    }
-
-    /**
      * Visit the class dependencies of the current class
-     * */
+     **/
     public void visitDependencies(ClassGraphNode node) {
 
         for (ClassGraphNode current : node.getDependencies()) {
@@ -300,23 +327,39 @@ public class GraphBuilder {
 
             if (!current.isVisited()) {
                 visitNode(current);
+                completeNodeVisit(current);
             }
+
+            findLinkedMethods(current);
         }
     }
 
     /**
      * Visit the child nodes of the current class
-     * */
+     **/
     public void visitChildNodes(ClassGraphNode node) {
 
         for (ClassGraphNode current : node.getChildNodes()) {
+            current.markAsUsed();
 
             if (!current.isVisited()) {
-
-                current.markAsUsed();
                 visitNode(current);
+                findLinkedMethods(current);
             }
+
+            completeNodeVisit(current);
         }
+    }
+
+    /**
+     * Pass the information gathered by the ClassVisitor to the ClassGraphNode object
+     **/
+    public void updateNode(ClassGraphNode node, ClassNode cv, DependencyCollector collector) {
+
+        node.setDependencies(collector.getDependencies());
+        node.methods = cv.methods;
+        node.markAsVisited();
+        nodes.put(node.name, node);
     }
 
     public ClassGraphNode getNodeByName(String name) {
@@ -363,7 +406,7 @@ public class GraphBuilder {
 
     /**
      * Visit every ClassGraphNode created and build a class hierarchy by assigning their child and super nodes
-     * */
+     */
     public void buildClassHierarchy() {
 
         for (String name : nodes.keySet()) {
@@ -399,8 +442,8 @@ public class GraphBuilder {
     }
 
     /**
-    * Mark the class as a service provider
-     * */
+     * Mark the class as a service provider
+     */
     public void setServiceProviders(List<String> serviceProviders) {
 
         for (String name : serviceProviders) {
