@@ -11,10 +11,11 @@ import java.util.Set;
 
 import static org.objectweb.asm.Opcodes.ASM6;
 
+/**
+ * A class representing a node created for each class file in the jar file
+ */
 public class ClassGraphNode extends ClassNode {
 
-    Set<ClassGraphNode> methodDependencies = new HashSet<>();
-    Set<MethodGraphNode> usedMethods = new HashSet<>();
     private List<ClassGraphNode> childNodes = new ArrayList<>();
     private Set<ClassGraphNode> dependencies = new HashSet<>();
     private ClassReader reader;
@@ -42,6 +43,16 @@ public class ClassGraphNode extends ClassNode {
     public boolean isUsed() {
 
         return used;
+    }
+
+    public void markAsVisited() {
+
+        visited = true;
+    }
+
+    public void markAsUsed() {
+
+        used = true;
     }
 
     public boolean isServiceProvider() {
@@ -74,19 +85,14 @@ public class ClassGraphNode extends ClassNode {
         this.dependencies = dependencies;
     }
 
-    public Set<ClassGraphNode> getMethodDependencies() {
-
-        return methodDependencies;
-    }
-
-    public void setMethodDependencies(Set<ClassGraphNode> methodDependencies) {
-
-        this.methodDependencies = methodDependencies;
-    }
-
     public String getSuperName() {
 
         return reader.getSuperName();
+    }
+
+    public ClassGraphNode getSuperNode() {
+
+        return superNode;
     }
 
     public void setSuperNode(ClassGraphNode superNode) {
@@ -94,14 +100,14 @@ public class ClassGraphNode extends ClassNode {
         this.superNode = superNode;
     }
 
-    public ClassGraphNode getSuperNode(){
-
-        return superNode;
-    }
-
     public String[] getInterfaceNames() {
 
         return reader.getInterfaces();
+    }
+
+    public List<ClassGraphNode> getInterfaceNodes() {
+
+        return interfaceNodes;
     }
 
     public void setInterfaceNodes(List<ClassGraphNode> interfaceNodes) {
@@ -109,11 +115,9 @@ public class ClassGraphNode extends ClassNode {
         this.interfaceNodes = interfaceNodes;
     }
 
-    public List<ClassGraphNode> getInterfaceNodes(){
-
-        return interfaceNodes;
-    }
-
+    /**
+     * accepts a ClassVisitor object and pass it to the accept method of ClassReader
+     **/
     @Override
     public void accept(ClassVisitor cv) {
 
@@ -121,19 +125,6 @@ public class ClassGraphNode extends ClassNode {
         cn.name = name;
         cn.methods = methods;
 
-        if (cn instanceof ClassGraphVisitor) {
-            ((ClassGraphVisitor) cn).usedMethods = usedMethods;
-        }
         reader.accept(cn, 0);
-    }
-
-    public void markAsVisited() {
-
-        visited = true;
-    }
-
-    public void markAsUsed() {
-
-        used = true;
     }
 }

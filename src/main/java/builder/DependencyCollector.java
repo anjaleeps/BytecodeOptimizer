@@ -9,19 +9,23 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Collects the dependent classes used by a particular class
+ * */
 public class DependencyCollector {
 
     final Pattern pattern;
     private Set<ClassGraphNode> dependencies = new HashSet<>();
-    private HashSet<ClassGraphNode> methodDependencies = new HashSet<>();
     private GraphBuilder builder;
-    MethodGraphNode visitingMethod;
 
     public DependencyCollector(GraphBuilder builder){
         pattern = Pattern.compile("([a-zA-Z]\\w+(/|[.]))+(\\w|[$])+");
         this.builder = builder;
     }
 
+    /**
+     * Get the class name corresponding to the Type object passed
+     * */
     public void addType(Type type) {
 
         switch (type.getSort()) {
@@ -37,11 +41,17 @@ public class DependencyCollector {
         }
     }
 
+    /**
+     * Get the class name corresponding to a field, annotation, or variable description
+     * */
     public void addDesc(String desc) {
 
         addType(Type.getType(desc));
     }
 
+    /**
+     * Get the types of the classes used in a class, method, field signature
+     * */
     public void addSignature(String signature) {
 
         if (signature != null) {
@@ -57,6 +67,10 @@ public class DependencyCollector {
         }
     }
 
+    /**
+     * Get the class types of passed constants
+     *
+     * */
     public void addConstant(Object constant) {
 
         if (constant instanceof Type) {
@@ -67,12 +81,17 @@ public class DependencyCollector {
             addMethodDesc(handle.getDesc());
         } else if (constant instanceof String) {
             String s = (String) constant;
+
+            //if the passed string matches the patters of a class name, add it as a dependency
             if (checkStringConstant(s)) {
                 addInternalName(s.replace('.', '/'));
             }
         }
     }
 
+    /**
+     * Get the parameter types and return type of a method using method description
+     * */
     public void addMethodDesc(String desc) {
 
         addType(Type.getReturnType(desc));
@@ -82,6 +101,9 @@ public class DependencyCollector {
         }
     }
 
+    /**
+     * Get the Type of the class represented by the given class name
+     * */
     public void addInternalName(String name) {
 
         addType(Type.getObjectType(name));
@@ -96,14 +118,23 @@ public class DependencyCollector {
         }
     }
 
+    /**
+     * Get the ClassGraphNode for the given class name from builder and add it as a
+     * class dependency of the current class. Only those that have created nodes are added.
+     * */
     public void addName(String name) {
 
         ClassGraphNode node = builder.getNodeByName(name);
         if (node != null) {
+            node.markAsUsed();
             dependencies.add(node);
         }
     }
 
+    /**
+     * Check if a string passed with ldc command matches the pattern of a class name.
+     * Purpose is catching classes passed through reflection
+     * */
     public boolean checkStringConstant(String s) {
 
         Matcher matcher = pattern.matcher(s);
@@ -118,27 +149,5 @@ public class DependencyCollector {
     public Set<ClassGraphNode> getDependencies(){
 
         return dependencies;
-    }
-
-
-
-    public Set<ClassGraphNode> getMethodDependencies(){
-
-        return methodDependencies;
-    }
-
-    public boolean markUsedMethod(String owner, MethodGraphNode mn){
-
-        ClassGraphNode node = builder.getNodeByName(owner);
-        if (node != null){
-            node.markAsUsed();
-            mn.markAsUsed();
-
-            if (node.methods.indexOf(mn) < 0){
-                node.methods.add(mn);
-            }
-            return true;
-        }
-        return false;
     }
 }

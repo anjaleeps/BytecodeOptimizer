@@ -12,6 +12,10 @@ import java.util.Set;
 
 import static org.objectweb.asm.Opcodes.ASM6;
 
+/**
+ * A class representing a node for each method inside a ClassGraphNode.
+ * Can act as a method node and a method node visitor
+ * */
 public class MethodGraphNode extends MethodNode {
 
     String owner;
@@ -45,7 +49,10 @@ public class MethodGraphNode extends MethodNode {
         visited = true;
     }
 
-    public void markUsedAsVisited(){
+    /**
+     * Mark the method when every method call made inside the current method node is visited
+     * */
+    public void markAsCalledVisited(){
 
         calledVisited = true;
     }
@@ -75,7 +82,7 @@ public class MethodGraphNode extends MethodNode {
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
 
-        collector.addDesc(desc);
+//        collector.addDesc(desc);
         super.visitAnnotation(desc, visible);
         return new AnnotationNodeVisitor(collector);
     }
@@ -83,7 +90,7 @@ public class MethodGraphNode extends MethodNode {
     @Override
     public AnnotationVisitor visitParameterAnnotation(int parameter, String desc, boolean visible) {
 
-        collector.addDesc(desc);
+//        collector.addDesc(desc);
         super.visitParameterAnnotation(parameter, desc, visible);
         return new AnnotationNodeVisitor(collector);
     }
@@ -91,7 +98,7 @@ public class MethodGraphNode extends MethodNode {
     @Override
     public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String desc, boolean visible) {
 
-        collector.addDesc(desc);
+//        collector.addDesc(desc);
         super.visitTypeAnnotation(typeRef, typePath, desc, visible);
         return new AnnotationNodeVisitor(collector);
     }
@@ -99,38 +106,35 @@ public class MethodGraphNode extends MethodNode {
     @Override
     public void visitTypeInsn(int opcode, String type) {
 
-        collector.addType(Type.getObjectType(type));
-//        System.out.println(type);
+//        collector.addType(Type.getObjectType(type));
         super.visitTypeInsn(opcode, type);
     }
 
     @Override
     public void visitFieldInsn(int opcode, String owner, String name, String desc) {
 
-        collector.addInternalName(owner);
+//        collector.addInternalName(owner);
         collector.addDesc(desc);
-//        System.out.println("field " + owner + " " + name + " " + desc);
         super.visitFieldInsn(opcode, owner, name, desc);
     }
 
     @Override
     public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
 
-        collector.addInternalName(owner);
-        collector.addMethodDesc(desc);
+//        collector.addInternalName(owner);
+//        collector.addMethodDesc(desc);
 
-//        addCalledMethod(owner, name, desc);
         super.visitMethodInsn(opcode, owner, name, desc, itf);
     }
 
     @Override
     public void visitInvokeDynamicInsn(String name, String desc, Handle bsm, Object... bsmArgs) {
 
-        collector.addMethodDesc(desc);
-        collector.addConstant(bsm);
-        for (int i = 0; i < bsmArgs.length; i++) {
-            collector.addConstant(bsmArgs[i]);
-        }
+//        collector.addMethodDesc(desc);
+//        collector.addConstant(bsm);
+//        for (int i = 0; i < bsmArgs.length; i++) {
+//            collector.addConstant(bsmArgs[i]);
+//        }
         super.visitInvokeDynamicInsn(name, desc, bsm, bsmArgs);
     }
 
@@ -144,40 +148,24 @@ public class MethodGraphNode extends MethodNode {
     @Override
     public void visitMultiANewArrayInsn(String desc, int dims) {
 
-        collector.addDesc(desc);
+//        collector.addDesc(desc);
         super.visitMultiANewArrayInsn(desc, dims);
     }
 
     @Override
     public void visitLocalVariable(String name, String desc, String signature, Label start, Label end, int index) {
 
-        collector.addTypeSignature(signature);
-//        System.out.println("local " + name + " " + desc);
+//        collector.addTypeSignature(signature);
         super.visitLocalVariable(name, desc, signature, start, end, index);
     }
 
     @Override
     public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {
 
-        if (type != null) {
-            collector.addInternalName(type);
-        }
+//        if (type != null) {
+//            collector.addInternalName(type);
+//        }
         super.visitTryCatchBlock(start, end, handler, type);
-    }
-
-    @Override
-    public void visitEnd() {
-
-//        collector.visitingMethod.calledMethods = calledMethods;
-    }
-
-    public void addCalledMethod(String owner, String name, String desc) {
-
-        MethodGraphNode mn = new MethodGraphNode(-1, owner, name, desc, null, null);
-        if (collector.markUsedMethod(owner, mn)) {
-
-            calledMethods.add(mn);
-        }
     }
 
     @Override

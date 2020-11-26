@@ -6,22 +6,23 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.TypePath;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import static org.objectweb.asm.Opcodes.ASM6;
 
-public class ClassGraphVisitor extends ClassNode {
+/**
+ * A class node visitor to visit the class attributes and annotations of a graph node.
+ * Also adds the names of all the methods in the class to the method list.
+ */
+public class ClassNodeVisitor extends ClassNode {
 
     private DependencyCollector collector;
     private String name;
-    Set<MethodGraphNode> usedMethods = new HashSet<>();
 
-    public ClassGraphVisitor(DependencyCollector collector) {
+    public ClassNodeVisitor(DependencyCollector collector) {
 
         super(ASM6);
         this.collector = collector;
@@ -37,6 +38,8 @@ public class ClassGraphVisitor extends ClassNode {
         return methods;
     }
 
+    /**
+     * Visit class's super class and implemented interfaces to the list of used dependency classes*/
     @Override
     public void visit(int version, int access, String name, String signature, String superName,
                       String[] interfaces) {
@@ -66,6 +69,9 @@ public class ClassGraphVisitor extends ClassNode {
         return new AnnotationNodeVisitor(collector);
     }
 
+    /**
+     * Visit class level fields and add field types to class-level dependencies
+     * */
     @Override
     public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
 
@@ -74,21 +80,28 @@ public class ClassGraphVisitor extends ClassNode {
         } else {
             collector.addSignature(signature);
         }
+
         if (value instanceof Type) {
             collector.addType((Type) value);
         }
-        FieldNode fn = new FieldNode(access, name, desc, signature, value);
+//        FieldNode fn = new FieldNode(access, name, desc, signature, value);
         return new FieldNodeVisitor(collector);
     }
 
+    /**
+     * Create a MethodGraphNode for each method in a class and adds it to the method list
+     * */
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
 
         MethodGraphNode mn = new MethodGraphNode(access, this.name, name, desc, signature, exceptions);
-        mn.setCollector(collector);
-
         methods.add(mn);
         return null;
+    }
+
+    @Override
+    public void visitEnd() {
+
     }
 
 }

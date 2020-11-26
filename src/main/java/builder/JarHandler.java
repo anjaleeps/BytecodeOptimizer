@@ -12,8 +12,10 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
-import java.util.jar.Manifest;
 
+/**
+ * A class for reading and writing the jar file
+ * */
 public class JarHandler {
 
     private final GraphBuilder builder;
@@ -40,6 +42,8 @@ public class JarHandler {
                 try (InputStream stream = jar.getInputStream(entry)) {
                     byte[] bytes = IOUtils.toByteArray(stream);
 
+                    //if the current file is listed as a Service provider for the program add it to the service
+                    // provider list
                     if (!entry.isDirectory() && entry.getName().contains("META-INF/services/")) {
 
                         String providerName = entry.getName();
@@ -48,6 +52,7 @@ public class JarHandler {
                         serviceProviders.add(providerName.replace(".", "/"));
                     }
 
+                    //if file name ends with .class create a ClassGraphNode for it
                     if (entry.getName().endsWith(".class")) {
                         String className = getEntryClassName(entry.getName());
                         createNodeForClass(className, bytes);
@@ -94,6 +99,7 @@ public class JarHandler {
                         String className = getEntryClassName(entry.getName());
                         ClassGraphNode classGraphNode = builder.getNodeByName(className);
 
+                        //If the ClassGraphNode is marked as used add its class to the final jar file.
                         if (!classGraphNode.isUsed()) {
                             continue;
                         }

@@ -8,12 +8,11 @@ public class Main {
 
         GraphBuilder builder = new GraphBuilder();
         JarHandler jarHandler = new JarHandler(builder);
-        builder.toString();
 
-        String jarName = "TestAppWithDependency.jar";
+        String jarName = "helloWorld.jar";
         jarHandler.readJar(jarName);
 
-        String rootName = "demo/Main";
+        String rootName = "user/helloWorld/___init";
         builder.setRootNode(rootName);
 
         builder.build();
@@ -24,6 +23,7 @@ public class Main {
         System.out.println("Total Nodes: " + builder.getGraphSize());
         System.out.println("Visited Nodes: " + builder.getVisitedCount());
         System.out.println("Used Nodes: " + builder.getUsedCount());
+        System.out.println("visited methods: " + GraphBuilder.visitedMethodCount);
         System.out.println("Execution Time in Millis: " + executionTime / 1000000);
     }
 }
