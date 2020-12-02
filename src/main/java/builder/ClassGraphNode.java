@@ -122,10 +122,13 @@ public class ClassGraphNode extends ClassNode {
     @Override
     public void accept(ClassVisitor cv) {
 
-        ClassNode cn = (ClassNode) cv;
-        cn.name = name;
-        cn.methods = methods;
+        if (cv instanceof ClassNode){
+            ClassNode cn = (ClassNode) cv;
+            cn.name = name;
+            cn.methods = methods;
+            cn.access = access;
+        }
 
-        reader.accept(cn, 0);
+        reader.accept(cv, 0);
     }
 }

@@ -23,6 +23,7 @@ public class Main {
         System.out.println("Total Nodes: " + builder.getGraphSize());
         System.out.println("Visited Nodes: " + builder.getVisitedCount());
         System.out.println("Used Nodes: " + builder.getUsedCount());
+        System.out.println("Total methods: " + GraphBuilder.totalMethodCount);
         System.out.println("visited methods: " + GraphBuilder.visitedMethodCount);
         System.out.println("Execution Time in Millis: " + executionTime / 1000000);
     }

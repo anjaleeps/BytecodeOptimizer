@@ -1,8 +1,10 @@
 package builder;
 
 import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.Attribute;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.ModuleVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.TypePath;
 import org.objectweb.asm.tree.ClassNode;
@@ -46,6 +48,8 @@ public class ClassNodeVisitor extends ClassNode {
                       String[] interfaces) {
 
         this.name = name;
+        this.access = access;
+        this.signature =signature;
         if (signature == null) {
             if (superName != null) {
                 collector.addName(superName);
@@ -54,6 +58,32 @@ public class ClassNodeVisitor extends ClassNode {
         } else {
             collector.addSignature(signature);
         }
+    }
+
+    @Override
+    public void visitSource(String file, String debug) {
+
+    }
+
+    @Override
+    public ModuleVisitor visitModule(String name, int access, String version) {
+
+        return null;
+    }
+
+    @Override
+    public void visitOuterClass(String owner, String name, String desc) {
+
+    }
+
+    @Override
+    public void visitInnerClass(String name, String outerName, String innerName, int access) {
+
+    }
+
+    @Override
+    public void visitAttribute(Attribute attr){
+
     }
 
     @Override
@@ -96,6 +126,9 @@ public class ClassNodeVisitor extends ClassNode {
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
 
         MethodGraphNode mn = new MethodGraphNode(access, this.name, name, desc, signature, exceptions);
+        if (name.equals("<init>") || this.name.contains("Formatter")){
+            mn.markAsUsed();
+        }
         methods.add(mn);
         return null;
     }

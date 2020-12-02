@@ -75,54 +75,51 @@ public class MethodGraphNode extends MethodNode {
     @Override
     public AnnotationVisitor visitAnnotationDefault() {
 
-        super.visitAnnotationDefault();
+//        super.visitAnnotationDefault();
         return new AnnotationNodeVisitor(collector);
     }
 
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
 
-//        collector.addDesc(desc);
-        super.visitAnnotation(desc, visible);
+        collector.addDesc(desc);
+//        super.visitAnnotation(desc, visible);
         return new AnnotationNodeVisitor(collector);
     }
 
     @Override
     public AnnotationVisitor visitParameterAnnotation(int parameter, String desc, boolean visible) {
 
-//        collector.addDesc(desc);
-        super.visitParameterAnnotation(parameter, desc, visible);
+        collector.addDesc(desc);
+//        super.visitParameterAnnotation(parameter, desc, visible);
         return new AnnotationNodeVisitor(collector);
     }
 
     @Override
     public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String desc, boolean visible) {
 
-//        collector.addDesc(desc);
-        super.visitTypeAnnotation(typeRef, typePath, desc, visible);
+        collector.addDesc(desc);
+//        super.visitTypeAnnotation(typeRef, typePath, desc, visible);
         return new AnnotationNodeVisitor(collector);
     }
 
     @Override
     public void visitTypeInsn(int opcode, String type) {
 
-//        collector.addType(Type.getObjectType(type));
-        super.visitTypeInsn(opcode, type);
+        collector.addType(Type.getObjectType(type));
+//        super.visitTypeInsn(opcode, type);
     }
 
     @Override
     public void visitFieldInsn(int opcode, String owner, String name, String desc) {
 
-//        collector.addInternalName(owner);
+        collector.addInternalName(owner);
         collector.addDesc(desc);
-        super.visitFieldInsn(opcode, owner, name, desc);
+//        super.visitFieldInsn(opcode, owner, name, desc);
     }
 
     @Override
     public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
-
-//        collector.addInternalName(owner);
-//        collector.addMethodDesc(desc);
 
         super.visitMethodInsn(opcode, owner, name, desc, itf);
     }
@@ -142,21 +139,22 @@ public class MethodGraphNode extends MethodNode {
     public void visitLdcInsn(Object constant) {
 
         collector.addConstant(constant);
-        super.visitLdcInsn(constant);
+
+//        super.visitLdcInsn(constant);
     }
 
     @Override
     public void visitMultiANewArrayInsn(String desc, int dims) {
 
-//        collector.addDesc(desc);
-        super.visitMultiANewArrayInsn(desc, dims);
+        collector.addDesc(desc);
+//        super.visitMultiANewArrayInsn(desc, dims);
     }
 
     @Override
     public void visitLocalVariable(String name, String desc, String signature, Label start, Label end, int index) {
 
-//        collector.addTypeSignature(signature);
-        super.visitLocalVariable(name, desc, signature, start, end, index);
+        collector.addTypeSignature(signature);
+//        super.visitLocalVariable(name, desc, signature, start, end, index);
     }
 
     @Override
@@ -165,7 +163,7 @@ public class MethodGraphNode extends MethodNode {
         if (type != null) {
             collector.addInternalName(type);
         }
-        super.visitTryCatchBlock(start, end, handler, type);
+//        super.visitTryCatchBlock(start, end, handler, type);
     }
 
     @Override

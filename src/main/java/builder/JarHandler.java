@@ -3,6 +3,7 @@ package builder;
 import org.apache.commons.io.IOUtils;
 import org.objectweb.asm.tree.MethodNode;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -13,10 +14,11 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
+import java.util.zip.ZipEntry;
 
 /**
  * A class for reading and writing the jar file
- * */
+ */
 public class JarHandler {
 
     private final GraphBuilder builder;
@@ -95,6 +97,7 @@ public class JarHandler {
                 Enumeration<JarEntry> entries = jar.entries();
                 while (entries.hasMoreElements()) {
                     JarEntry entry = entries.nextElement();
+                    InputStream stream;
 
                     if (entry.getName().endsWith(".class")) {
                         String className = getEntryClassName(entry.getName());
@@ -106,16 +109,21 @@ public class JarHandler {
                         }
 
                         builder.countUsed();
+
+                        //remove unused methods
+                        byte[] modifiedClassBytes = builder.removeUnusedMethods(classGraphNode);
+
+                        stream = new ByteArrayInputStream(modifiedClassBytes);
+                        entry = new JarEntry(new ZipEntry(entry.getName()));
+                        entry.setSize(modifiedClassBytes.length);
+                    } else {
+                        stream = jar.getInputStream(entry);
                     }
 
-                    try (InputStream stream = jar.getInputStream(entry)) {
-                        newJar.putNextEntry(entry);
+                    newJar.putNextEntry(entry);
 
-                        while ((bytesRead = stream.read(buffer)) != -1) {
-                            newJar.write(buffer, 0, bytesRead);
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                    while ((bytesRead = stream.read(buffer)) != -1) {
+                        newJar.write(buffer, 0, bytesRead);
                     }
                 }
             } catch (IOException e) {
