@@ -1,3 +1,22 @@
+/*
+ * Copyright (c)  2020, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ *  WSO2 Inc. licenses this file to you under the Apache License,
+ *  Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing,
+ *   software distributed under the License is distributed on an
+ *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations
+ *  under the License.
+ *
+ */
+
 package builder;
 
 import org.objectweb.asm.ClassVisitor;
@@ -71,7 +90,7 @@ public class GraphBuilder {
         for (MethodNode methodNode : node.methods) {
             MethodGraphNode method = (MethodGraphNode) methodNode;
 
-            if (method.isVisited() && !method.isCalledVisited()) {
+            if (method.isUsed() && !method.isCalledVisited()) {
 
                 method.markAsCalledVisited();
                 InsnList instructions = method.instructions;
@@ -87,19 +106,6 @@ public class GraphBuilder {
                     else if (insnNode.getType() == AbstractInsnNode.INVOKE_DYNAMIC_INSN) {
                         visitInvokeDynamicInsn((InvokeDynamicInsnNode) insnNode, method);
                     }
-                }
-
-                List<MethodGraphNode> usedMethods = new ArrayList<>();
-                usedMethods.addAll(method.calledMethods);
-
-                //check the children of used methods' classes to find overridden methods from instantiated
-                //and service provider classes
-                for (MethodGraphNode usedMethod : usedMethods) {
-
-                    ClassGraphNode owner = getNodeByName(usedMethod.owner);
-                    MethodGraphNode mn = new MethodGraphNode(usedMethod.access, usedMethod.owner,
-                            usedMethod.name, usedMethod.desc, null, null);
-                    checkChildrenForUsedMethod(owner, mn, method);
                 }
             }
         }
@@ -118,27 +124,22 @@ public class GraphBuilder {
             return;
         }
 
-        //if the called method instantiate an object, add it's class name to the list of initialized classes
-        if (methodInsnNode.name.equals("<init>")) {
-            instantiatedClasses.add(methodInsnNode.owner);
-        }
+//        //if the called method instantiate an object, add it's class name to the list of initialized classes
+//        if (methodInsnNode.getOpcode() == Opcodes.INVOKESPECIAL) {
+//            instantiatedClasses.add(methodInsnNode.owner);
+//        }
 
         //Create MethodGraphNode for the method called inside the current method
-        MethodGraphNode mn = new MethodGraphNode(-1, methodInsnNode.owner,
+        MethodGraphNode mn = new MethodGraphNode(0, methodInsnNode.owner,
                 methodInsnNode.name, methodInsnNode.desc, null, null);
 
         MethodGraphNode usedMethod = checkUsedMethod(owner, mn, method);
+        checkChildrenForUsedMethod(owner, mn, method);
+        checkInterfacesForUsedMethod(owner, mn, method);
         if (usedMethod == null) {
-            //if the owner is an interface check extended interfaces for the called method
-            if ((owner.access & Opcodes.ACC_INTERFACE) != 0) {
-                checkInterfacesForUsedMethod(owner, mn, method);
-                return;
-            }
-            //if owner is a class check extended class for the called method
             checkParentForUsedMethod(owner, mn, method);
-        } else {
-            checkInterfacesForUsedMethod(owner, mn, method);
         }
+
     }
 
     /**
@@ -158,21 +159,14 @@ public class GraphBuilder {
                     continue;
                 }
 
-                if (handle.getName().equals("<init>")) {
-                    instantiatedClasses.add(handle.getOwner());
-                }
-                MethodGraphNode mn = new MethodGraphNode(-1, handle.getOwner(), handle.getName(),
+                MethodGraphNode mn = new MethodGraphNode(0, handle.getOwner(), handle.getName(),
                         handle.getDesc(), null, null);
 
                 MethodGraphNode usedMethod = checkUsedMethod(owner, mn, method);
+                checkInterfacesForUsedMethod(owner, mn, method);
+                checkChildrenForUsedMethod(owner, mn, method);
                 if (usedMethod == null) {
-                    if ((owner.access & Opcodes.ACC_INTERFACE) != 0) {
-                        checkInterfacesForUsedMethod(owner, mn, method);
-                        return;
-                    }
                     checkParentForUsedMethod(owner, mn, method);
-                } else {
-                    checkInterfacesForUsedMethod(owner, mn, method);
                 }
             }
         }
@@ -195,7 +189,6 @@ public class GraphBuilder {
         }
 
         if (!owner.isUsed()) {
-
             owner.markAsUsed();
             completeNodeVisit(owner);
         }
@@ -203,8 +196,6 @@ public class GraphBuilder {
         MethodGraphNode usedMethod = (MethodGraphNode) owner.methods.get(index);
         current.calledMethods.add(usedMethod);
         visitMethodOwnerNode(owner, usedMethod);
-
-        mn.access = usedMethod.access;
         return mn;
     }
 
@@ -294,14 +285,8 @@ public class GraphBuilder {
 
         for (ClassGraphNode childNode : owner.getChildNodes()) {
 
-            //if the child class was instantiated up till this point, check if the child class has also implemented
-            // the called method
             mn.owner = childNode.name;
-            if (owner.isServiceProvider()) {
-                checkUsedMethod(childNode, mn, current);
-            } else if (instantiatedClasses.contains(childNode.name)) {
-                checkUsedMethod(childNode, mn, current);
-            }
+            checkUsedMethod(childNode, mn, current);
             checkChildrenForUsedMethod(childNode, mn, current);
         }
     }
@@ -352,6 +337,10 @@ public class GraphBuilder {
      * Visit the unvisited methods marked as used inside a class
      */
     public void visitNodeForMethods(ClassGraphNode node) {
+
+//        if (node.name.contains("jvm/types/BType")){
+//            System.out.println(node.name);
+//        }
 
         DependencyCollector collector = new DependencyCollector(this);
         ClassVisitorForMethods cv = new ClassVisitorForMethods(collector);
@@ -421,48 +410,6 @@ public class GraphBuilder {
         nodes.put(node.name, node);
     }
 
-    public ClassGraphNode getNodeByName(String name) {
-
-        return nodes.get(name);
-    }
-
-    public int getGraphSize() {
-
-        return nodes.size();
-    }
-
-    public void countVisited() {
-
-        visitedCount++;
-    }
-
-    public void countUsed() {
-
-        usedCount++;
-    }
-
-    public int getVisitedCount() {
-
-        return visitedCount;
-    }
-
-    public int getUsedCount() {
-
-        return usedCount;
-    }
-
-    public void addNewNode(String name, byte[] bytes) {
-
-        ClassGraphNode newNode = new ClassGraphNode(name, bytes);
-        nodes.put(name, newNode);
-    }
-
-    public void setRootNode(String rootName) {
-
-        rootNode = getNodeByName(rootName);
-        rootNode.markAsUsed();
-    }
-
     /**
      * Visit every ClassGraphNode created and build a class hierarchy by assigning their child and super nodes
      */
@@ -524,4 +471,50 @@ public class GraphBuilder {
         node.accept(visitor);
         return writer.toByteArray();
     }
+
+    public ClassGraphNode getNodeByName(String name) {
+
+        return nodes.get(name);
+    }
+
+    public int getGraphSize() {
+
+        return nodes.size();
+    }
+
+    public void countVisited() {
+
+        visitedCount++;
+    }
+
+    public void countUsed() {
+
+        usedCount++;
+    }
+
+    public int getVisitedCount() {
+
+        return visitedCount;
+    }
+
+    public int getUsedCount() {
+
+        return usedCount;
+    }
+
+    public void addNewNode(String name, byte[] bytes) {
+
+        ClassGraphNode newNode = new ClassGraphNode(name, bytes);
+        nodes.put(name, newNode);
+    }
+
+    public void setRootNode(String rootName) {
+
+        rootNode = getNodeByName(rootName);
+        if (rootNode == null) {
+            throw new IllegalArgumentException("root file doesn't exist");
+        }
+        rootNode.markAsUsed();
+    }
+
 }

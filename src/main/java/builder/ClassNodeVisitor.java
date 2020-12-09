@@ -1,3 +1,22 @@
+/*
+ * Copyright (c)  2020, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ *  WSO2 Inc. licenses this file to you under the Apache License,
+ *  Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing,
+ *   software distributed under the License is distributed on an
+ *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations
+ *  under the License.
+ *
+ */
+
 package builder;
 
 import org.objectweb.asm.AnnotationVisitor;
@@ -42,14 +61,14 @@ public class ClassNodeVisitor extends ClassNode {
 
     /**
      * Visit class's super class and implemented interfaces to the list of used dependency classes
-     * */
+     */
     @Override
     public void visit(int version, int access, String name, String signature, String superName,
                       String[] interfaces) {
 
         this.name = name;
         this.access = access;
-        this.signature =signature;
+        this.signature = signature;
         if (signature == null) {
             if (superName != null) {
                 collector.addName(superName);
@@ -82,7 +101,7 @@ public class ClassNodeVisitor extends ClassNode {
     }
 
     @Override
-    public void visitAttribute(Attribute attr){
+    public void visitAttribute(Attribute attr) {
 
     }
 
@@ -102,7 +121,7 @@ public class ClassNodeVisitor extends ClassNode {
 
     /**
      * Visit class level fields and add field types to class-level dependencies
-     * */
+     */
     @Override
     public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
 
@@ -121,12 +140,12 @@ public class ClassNodeVisitor extends ClassNode {
 
     /**
      * Create a MethodGraphNode for each method in a class and adds it to the method list
-     * */
+     */
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
 
         MethodGraphNode mn = new MethodGraphNode(access, this.name, name, desc, signature, exceptions);
-        if (name.equals("<init>") || this.name.contains("Formatter")){
+        if (name.equals("<init>") || this.name.contains("Formatter")) {
             mn.markAsUsed();
         }
         methods.add(mn);

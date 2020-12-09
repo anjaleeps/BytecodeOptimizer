@@ -1,3 +1,22 @@
+/*
+ * Copyright (c)  2020, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ *  WSO2 Inc. licenses this file to you under the Apache License,
+ *  Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing,
+ *   software distributed under the License is distributed on an
+ *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied. See the License for the
+ *  specific language governing permissions and limitations
+ *  under the License.
+ *
+ */
+
 package builder;
 
 import org.objectweb.asm.AnnotationVisitor;
@@ -75,7 +94,6 @@ public class MethodGraphNode extends MethodNode {
     @Override
     public AnnotationVisitor visitAnnotationDefault() {
 
-//        super.visitAnnotationDefault();
         return new AnnotationNodeVisitor(collector);
     }
 
@@ -83,7 +101,6 @@ public class MethodGraphNode extends MethodNode {
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
 
         collector.addDesc(desc);
-//        super.visitAnnotation(desc, visible);
         return new AnnotationNodeVisitor(collector);
     }
 
@@ -91,7 +108,6 @@ public class MethodGraphNode extends MethodNode {
     public AnnotationVisitor visitParameterAnnotation(int parameter, String desc, boolean visible) {
 
         collector.addDesc(desc);
-//        super.visitParameterAnnotation(parameter, desc, visible);
         return new AnnotationNodeVisitor(collector);
     }
 
@@ -99,7 +115,6 @@ public class MethodGraphNode extends MethodNode {
     public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String desc, boolean visible) {
 
         collector.addDesc(desc);
-//        super.visitTypeAnnotation(typeRef, typePath, desc, visible);
         return new AnnotationNodeVisitor(collector);
     }
 
@@ -107,7 +122,6 @@ public class MethodGraphNode extends MethodNode {
     public void visitTypeInsn(int opcode, String type) {
 
         collector.addType(Type.getObjectType(type));
-//        super.visitTypeInsn(opcode, type);
     }
 
     @Override
@@ -115,7 +129,6 @@ public class MethodGraphNode extends MethodNode {
 
         collector.addInternalName(owner);
         collector.addDesc(desc);
-//        super.visitFieldInsn(opcode, owner, name, desc);
     }
 
     @Override
@@ -139,8 +152,6 @@ public class MethodGraphNode extends MethodNode {
     public void visitLdcInsn(Object constant) {
 
         collector.addConstant(constant);
-
-//        super.visitLdcInsn(constant);
     }
 
     @Override
@@ -154,7 +165,6 @@ public class MethodGraphNode extends MethodNode {
     public void visitLocalVariable(String name, String desc, String signature, Label start, Label end, int index) {
 
         collector.addTypeSignature(signature);
-//        super.visitLocalVariable(name, desc, signature, start, end, index);
     }
 
     @Override
@@ -163,7 +173,6 @@ public class MethodGraphNode extends MethodNode {
         if (type != null) {
             collector.addInternalName(type);
         }
-//        super.visitTryCatchBlock(start, end, handler, type);
     }
 
     @Override
