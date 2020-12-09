@@ -131,12 +131,18 @@ public class MethodGraphNode extends MethodNode {
         collector.addDesc(desc);
     }
 
+    /**
+     * Visit INVOKESTATIC, INVOKESPECIAL, INVOKEINTERFACE, INVOKEVIRTUAL method calls
+     */
     @Override
     public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
 
         super.visitMethodInsn(opcode, owner, name, desc, itf);
     }
 
+    /**
+     * Visit INVOKEDYNAMIC method calls
+     */
     @Override
     public void visitInvokeDynamicInsn(String name, String desc, Handle bsm, Object... bsmArgs) {
 

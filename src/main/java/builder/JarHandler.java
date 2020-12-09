@@ -20,7 +20,6 @@
 package builder;
 
 import org.apache.commons.io.IOUtils;
-import org.objectweb.asm.tree.MethodNode;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -36,7 +35,7 @@ import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 
 /**
- * A class for reading and writing the jar file
+ * A class for reading and writing jar files
  */
 public class JarHandler {
 
@@ -48,12 +47,15 @@ public class JarHandler {
         this.builder = builder;
     }
 
+    /**
+     * Read the jar file and create graph nodes for .class filed
+     */
     public void readJar(String jarName) {
 
         this.jarName = jarName;
         File file = new File(jarName);
 
-        if (!file.exists()){
+        if (!file.exists()) {
             throw new IllegalArgumentException("Jar file doesn't exist");
         }
 
@@ -68,20 +70,18 @@ public class JarHandler {
                 try (InputStream stream = jar.getInputStream(entry)) {
                     byte[] bytes = IOUtils.toByteArray(stream);
 
-                    //if the current file is listed as a Service provider for the program add it to the service
-                    // provider list
+                    //if the current file is listed as a Service provider add it to the service
+                    // providers list
                     if (!entry.isDirectory() && entry.getName().contains("META-INF/services/")) {
 
-                        String providerName = entry.getName();
-                        int i = providerName.lastIndexOf('/');
-                        providerName = providerName.substring(i + 1);
-                        serviceProviders.add(providerName.replace(".", "/"));
+                        String providerName = getServiceProviderClassName(entry.getName());
+                        serviceProviders.add(providerName);
                     }
 
                     //if file name ends with .class create a ClassGraphNode for it
                     if (entry.getName().endsWith(".class")) {
                         String className = getEntryClassName(entry.getName());
-                        createNodeForClass(className, bytes);
+                        createNodeForClassFile(className, bytes);
                     }
 
                 } catch (IOException e) {
@@ -89,22 +89,12 @@ public class JarHandler {
                 }
             }
 
+            //mark service provider class nodes for class names in the service provider list
             builder.setServiceProviders(serviceProviders);
 
         } catch (IOException e) {
             System.out.println("Cannot read Jar file");
         }
-    }
-
-    public String getEntryClassName(String entryName) {
-
-        int n = entryName.lastIndexOf('.');
-        return entryName.substring(0, n);
-    }
-
-    public void createNodeForClass(String className, byte[] bytes) {
-
-        builder.addNewNode(className, bytes);
     }
 
     public void writeJar() {
@@ -113,6 +103,7 @@ public class JarHandler {
 
         try (JarFile jar = new JarFile(file)) {
 
+            //create a new jar file to add the optimized program files
             try (JarOutputStream newJar = new JarOutputStream(new FileOutputStream("modified.jar"))) {
                 byte[] buffer = new byte[1024];
                 int bytesRead;
@@ -126,25 +117,19 @@ public class JarHandler {
                         String className = getEntryClassName(entry.getName());
                         ClassGraphNode classGraphNode = builder.getNodeByName(className);
 
-                        //If the ClassGraphNode is marked as used add its class to the final jar file.
+                        //If the ClassGraphNode is not marked as used don't add it to the final jar file.
                         if (!classGraphNode.isUsed()) {
                             continue;
-                        }
-                        if (className.endsWith("BallerinaErrorReasons")) {
-                            System.out.println(className);
-                            for (MethodNode mn : classGraphNode.methods) {
-                                if (((MethodGraphNode) mn).isUsed()) {
-                                    System.out.println(mn.name);
-                                }
-                            }
                         }
 
                         builder.countUsed();
 
-                        //remove unused methods
+                        //remove unused methods and get the byte array of the modified class
                         byte[] modifiedClassBytes = builder.removeUnusedMethods(classGraphNode);
 
                         stream = new ByteArrayInputStream(modifiedClassBytes);
+
+                        //create a new JarEntry for the modified class
                         entry = new JarEntry(new ZipEntry(entry.getName()));
                         entry.setSize(modifiedClassBytes.length);
                     } else {
@@ -164,5 +149,28 @@ public class JarHandler {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Get the class name from the name of the .class file
+     */
+    public String getEntryClassName(String entryName) {
+
+        int n = entryName.lastIndexOf('.');
+        return entryName.substring(0, n);
+    }
+
+    /**
+     * Get the class name of the service provider from the file in "META-INF/services/"
+     */
+    public String getServiceProviderClassName(String providerFileName) {
+
+        int i = providerFileName.lastIndexOf('/');
+        return providerFileName.substring(i + 1).replace(".", "/");
+    }
+
+    public void createNodeForClassFile(String className, byte[] bytes) {
+
+        builder.addNewNode(className, bytes);
     }
 }
