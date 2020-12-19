@@ -55,9 +55,6 @@ public class DependencyCollector {
                 addName(type.getInternalName());
                 break;
             case Type.METHOD:
-                if (type.getInternalName().equals("putValue")){
-                    System.out.println();
-                }
                 addMethodDesc(type.getDescriptor());
                 break;
         }

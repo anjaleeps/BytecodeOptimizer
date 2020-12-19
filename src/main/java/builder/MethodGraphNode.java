@@ -22,11 +22,12 @@ package builder;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
-import org.objectweb.asm.Type;
 import org.objectweb.asm.TypePath;
 import org.objectweb.asm.tree.MethodNode;
 
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static org.objectweb.asm.Opcodes.ASM6;
@@ -43,6 +44,7 @@ public class MethodGraphNode extends MethodNode {
     private boolean used;
     private boolean visited;
     private boolean calledVisited;
+    boolean isChildrenVisited;
 
     public MethodGraphNode(int access, String owner, String name, String desc, String signature, String[] exceptions) {
 
@@ -51,6 +53,7 @@ public class MethodGraphNode extends MethodNode {
         used = false;
         visited = false;
         calledVisited = false;
+        isChildrenVisited = false;
     }
 
     public void setCollector(DependencyCollector collector) {
@@ -121,14 +124,12 @@ public class MethodGraphNode extends MethodNode {
     @Override
     public void visitTypeInsn(int opcode, String type) {
 
-        collector.addType(Type.getObjectType(type));
     }
 
     @Override
     public void visitFieldInsn(int opcode, String owner, String name, String desc) {
 
         collector.addInternalName(owner);
-        collector.addDesc(desc);
     }
 
     /**
@@ -146,11 +147,6 @@ public class MethodGraphNode extends MethodNode {
     @Override
     public void visitInvokeDynamicInsn(String name, String desc, Handle bsm, Object... bsmArgs) {
 
-        collector.addMethodDesc(desc);
-        collector.addConstant(bsm);
-        for (int i = 0; i < bsmArgs.length; i++) {
-            collector.addConstant(bsmArgs[i]);
-        }
         super.visitInvokeDynamicInsn(name, desc, bsm, bsmArgs);
     }
 
@@ -163,22 +159,16 @@ public class MethodGraphNode extends MethodNode {
     @Override
     public void visitMultiANewArrayInsn(String desc, int dims) {
 
-        collector.addDesc(desc);
-//        super.visitMultiANewArrayInsn(desc, dims);
     }
 
     @Override
     public void visitLocalVariable(String name, String desc, String signature, Label start, Label end, int index) {
 
-        collector.addTypeSignature(signature);
     }
 
     @Override
     public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {
 
-        if (type != null) {
-            collector.addInternalName(type);
-        }
     }
 
     @Override
@@ -190,6 +180,11 @@ public class MethodGraphNode extends MethodNode {
             return owner.equals(mn.owner) && name.equals(mn.name) && desc.equals(mn.desc);
         }
         return false;
+    }
+
+    public MethodGraphNode getCopy(){
+
+        return new MethodGraphNode(access, owner, name, desc, null, null);
     }
 
 }

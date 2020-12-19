@@ -16,4 +16,8 @@ dependencies {
     compile 'commons-io:commons-io:2.8.0'
 }
 
+run{
+//    jvmArgs = ['-Xss2m']
+}
+
 mainClassName = 'builder.Main'

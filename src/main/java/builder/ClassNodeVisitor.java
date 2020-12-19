@@ -42,11 +42,13 @@ public class ClassNodeVisitor extends ClassNode {
 
     private DependencyCollector collector;
     private String name;
+    private boolean isAnonymousClass;
 
     public ClassNodeVisitor(DependencyCollector collector) {
 
         super(ASM6);
         this.collector = collector;
+        isAnonymousClass = false;
     }
 
     public Set<ClassGraphNode> getDependencies() {
@@ -68,7 +70,6 @@ public class ClassNodeVisitor extends ClassNode {
 
         this.name = name;
         this.access = access;
-        this.signature = signature;
         if (signature == null) {
             if (superName != null) {
                 collector.addName(superName);
@@ -93,6 +94,8 @@ public class ClassNodeVisitor extends ClassNode {
     @Override
     public void visitOuterClass(String owner, String name, String desc) {
 
+        isAnonymousClass = true;
+
     }
 
     @Override
@@ -108,15 +111,13 @@ public class ClassNodeVisitor extends ClassNode {
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
 
-        collector.addDesc(desc);
-        return new AnnotationNodeVisitor(collector);
+        return null;
     }
 
     @Override
     public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String desc, boolean visible) {
 
-        collector.addDesc(desc);
-        return new AnnotationNodeVisitor(collector);
+        return null;
     }
 
     /**
@@ -125,17 +126,7 @@ public class ClassNodeVisitor extends ClassNode {
     @Override
     public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
 
-        if (signature == null) {
-            collector.addDesc(desc);
-        } else {
-            collector.addSignature(signature);
-        }
-
-        if (value instanceof Type) {
-            collector.addType((Type) value);
-        }
-//        FieldNode fn = new FieldNode(access, name, desc, signature, value);
-        return new FieldNodeVisitor(collector);
+        return null;
     }
 
     /**
@@ -145,7 +136,7 @@ public class ClassNodeVisitor extends ClassNode {
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
 
         MethodGraphNode mn = new MethodGraphNode(access, this.name, name, desc, signature, exceptions);
-        if (name.equals("<init>") || this.name.contains("Formatter")) {
+        if (name.equals("<init>") || name.equals("<clinit>") || isAnonymousClass) {
             mn.markAsUsed();
         }
         methods.add(mn);

@@ -23,7 +23,9 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.tree.ClassNode;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -44,11 +46,10 @@ public class ClassGraphNode extends ClassNode {
     private boolean used;
     private boolean isServiceProvider;
 
-    public ClassGraphNode(String name, byte[] bytes) {
+    public ClassGraphNode(String name) {
 
         super(ASM6);
         this.name = name;
-        this.reader = new ClassReader(bytes);
         visited = false;
         used = false;
         isServiceProvider = false;
@@ -89,6 +90,19 @@ public class ClassGraphNode extends ClassNode {
         childNodes.add(childNode);
     }
 
+    public void setReader(byte[] bytes) {
+
+        reader = new ClassReader(bytes);
+    }
+
+    public void setReader() {
+
+        try {
+            this.reader = new ClassReader(this.name);
+        } catch (IOException e) {
+        }
+    }
+
     public List<ClassGraphNode> getChildNodes() {
 
         return childNodes;
@@ -106,7 +120,11 @@ public class ClassGraphNode extends ClassNode {
 
     public String getSuperName() {
 
-        return reader.getSuperName();
+        if (reader == null) {
+            return null;
+        }
+        this.superName = reader.getSuperName();
+        return superName;
     }
 
     public ClassGraphNode getSuperNode() {
@@ -121,6 +139,10 @@ public class ClassGraphNode extends ClassNode {
 
     public String[] getInterfaceNames() {
 
+        if (reader == null) {
+            return null;
+        }
+        this.interfaces = Arrays.asList(reader.getInterfaces());
         return reader.getInterfaces();
     }
 
@@ -136,16 +158,16 @@ public class ClassGraphNode extends ClassNode {
 
     /**
      * accepts a ClassVisitor object and pass it to the accept method of ClassReader
-     *
      **/
     @Override
     public void accept(ClassVisitor cv) {
 
-        if (cv instanceof ClassNode){
+        if (cv instanceof ClassNode) {
             ClassNode cn = (ClassNode) cv;
             cn.name = name;
             cn.methods = methods;
             cn.access = access;
+            cn.superName = superName;
         }
 
         reader.accept(cv, 0);

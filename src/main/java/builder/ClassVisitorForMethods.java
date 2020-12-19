@@ -112,14 +112,6 @@ public class ClassVisitorForMethods extends ClassNode {
 
         if (mn.isUsed() && !mn.isVisited()) {
 
-            //add method parameter and return types to class dependencies
-            if (signature == null) {
-                collector.addMethodDesc(desc);
-            } else {
-                collector.addSignature(signature);
-            }
-            collector.addInternalNames(exceptions);
-
             mn.markAsVisited();
             mn.setCollector(collector);
             return mn;
