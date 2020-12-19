@@ -108,6 +108,7 @@ public class JarHandler {
             try (JarOutputStream newJar = new JarOutputStream(new FileOutputStream("modified.jar"))) {
                 byte[] buffer = new byte[1024];
                 int bytesRead;
+                int num = 0;
 
                 Enumeration<JarEntry> entries = jar.entries();
                 while (entries.hasMoreElements()) {
@@ -124,6 +125,13 @@ public class JarHandler {
                         }
 
                         builder.countUsed();
+
+                        for (MethodNode mn : classGraphNode.methods) {
+                           if (!mn.name.equals("<init>") && !mn.name.equals("<clinit")){
+                               num++;
+                               break;
+                           }
+                        }
 
                         //remove unused methods and get the byte array of the modified class
                         byte[] modifiedClassBytes = builder.removeUnusedMethods(classGraphNode);
@@ -143,6 +151,7 @@ public class JarHandler {
                         newJar.write(buffer, 0, bytesRead);
                     }
                 }
+                System.out.println(num);
             } catch (IOException e) {
                 e.printStackTrace();
             }

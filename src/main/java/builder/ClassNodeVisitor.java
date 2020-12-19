@@ -24,7 +24,6 @@ import org.objectweb.asm.Attribute;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.ModuleVisitor;
-import org.objectweb.asm.Type;
 import org.objectweb.asm.TypePath;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -40,25 +39,13 @@ import static org.objectweb.asm.Opcodes.ASM6;
  */
 public class ClassNodeVisitor extends ClassNode {
 
-    private DependencyCollector collector;
     private String name;
     private boolean isAnonymousClass;
 
-    public ClassNodeVisitor(DependencyCollector collector) {
+    public ClassNodeVisitor() {
 
         super(ASM6);
-        this.collector = collector;
         isAnonymousClass = false;
-    }
-
-    public Set<ClassGraphNode> getDependencies() {
-
-        return collector.getDependencies();
-    }
-
-    public List<MethodNode> getMethods() {
-
-        return methods;
     }
 
     /**
@@ -70,14 +57,6 @@ public class ClassNodeVisitor extends ClassNode {
 
         this.name = name;
         this.access = access;
-        if (signature == null) {
-            if (superName != null) {
-                collector.addName(superName);
-            }
-            collector.addInternalNames(interfaces);
-        } else {
-            collector.addSignature(signature);
-        }
     }
 
     @Override

@@ -34,12 +34,10 @@ import java.util.regex.Pattern;
 public class DependencyCollector {
 
     final Pattern pattern;
-    private Set<ClassGraphNode> dependencies = new HashSet<>();
-    private GraphBuilder builder;
+    private Set<String> dependencies = new HashSet<>();
 
-    public DependencyCollector(GraphBuilder builder){
+    public DependencyCollector(){
         pattern = Pattern.compile("([a-zA-Z]\\w+/)+(\\w|[$])+");
-        this.builder = builder;
     }
 
     /**
@@ -143,10 +141,7 @@ public class DependencyCollector {
      * */
     public void addName(String name) {
 
-        ClassGraphNode node = builder.getNodeByName(name);
-        if (node != null) {
-            dependencies.add(node);
-        }
+        dependencies.add(name);
     }
 
     /**
@@ -164,7 +159,7 @@ public class DependencyCollector {
         return false;
     }
 
-    public Set<ClassGraphNode> getDependencies(){
+    public Set<String> getDependencies(){
 
         return dependencies;
     }

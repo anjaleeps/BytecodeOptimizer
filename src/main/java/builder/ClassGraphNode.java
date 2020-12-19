@@ -39,6 +39,7 @@ public class ClassGraphNode extends ClassNode {
 
     private List<ClassGraphNode> childNodes = new ArrayList<>();
     private Set<ClassGraphNode> dependencies = new HashSet<>();
+    private Set<MethodGraphNode> methodsUsedIn = new HashSet<>();
     private ClassReader reader;
     private ClassGraphNode superNode;
     private List<ClassGraphNode> interfaceNodes;
@@ -85,6 +86,19 @@ public class ClassGraphNode extends ClassNode {
         isServiceProvider = true;
     }
 
+    public void addNewMethodUsedIn(MethodGraphNode methodUsedIn) {
+
+        methodsUsedIn.add(methodUsedIn);
+    }
+
+    public void removeMethodUsedIn(MethodGraphNode methodUsedIn) {
+
+        methodsUsedIn.remove(methodUsedIn);
+        if (methodsUsedIn.size() == 0){
+            used = false;
+        }
+    }
+
     public void addChildNode(ClassGraphNode childNode) {
 
         childNodes.add(childNode);
@@ -106,11 +120,6 @@ public class ClassGraphNode extends ClassNode {
     public List<ClassGraphNode> getChildNodes() {
 
         return childNodes;
-    }
-
-    public Set<ClassGraphNode> getDependencies() {
-
-        return dependencies;
     }
 
     public void setDependencies(Set<ClassGraphNode> dependencies) {

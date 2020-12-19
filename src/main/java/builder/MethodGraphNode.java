@@ -39,12 +39,14 @@ import static org.objectweb.asm.Opcodes.ASM6;
 public class MethodGraphNode extends MethodNode {
 
     String owner;
-    Set<MethodGraphNode> calledMethods = new HashSet<>();
+    private Set<MethodGraphNode> resolvedAtRuntimeMethodCalls = new HashSet<>();
+    private Set<MethodGraphNode> otherMethodCalls = new HashSet<>();
+    private Set<MethodGraphNode> callingMethods = new HashSet<>();
     private DependencyCollector collector;
     private boolean used;
     private boolean visited;
     private boolean calledVisited;
-    boolean isChildrenVisited;
+    private boolean checkedByRTA;
 
     public MethodGraphNode(int access, String owner, String name, String desc, String signature, String[] exceptions) {
 
@@ -53,12 +55,56 @@ public class MethodGraphNode extends MethodNode {
         used = false;
         visited = false;
         calledVisited = false;
-        isChildrenVisited = false;
+        checkedByRTA = false;
     }
 
     public void setCollector(DependencyCollector collector) {
 
         this.collector = collector;
+    }
+
+    public Set<String> getDependencies(){
+
+        return collector.getDependencies();
+    }
+
+    public Set<MethodGraphNode> getResolvedAtRuntimeMethodCalls() {
+
+        return resolvedAtRuntimeMethodCalls;
+    }
+
+    public Set<MethodGraphNode> getOtherMethodCalls() {
+
+        return otherMethodCalls;
+    }
+
+    public void addMethodCall(MethodGraphNode calledMethod, boolean resolvedAtRuntime) {
+
+        if (resolvedAtRuntime) {
+            resolvedAtRuntimeMethodCalls.add(calledMethod);
+        } else {
+            otherMethodCalls.add(calledMethod);
+        }
+    }
+
+    public void removeResolvedAtRuntimeMethodCall(MethodGraphNode calledMethod) {
+
+        resolvedAtRuntimeMethodCalls.remove(calledMethod);
+    }
+
+    public boolean removeCallingMethod(MethodGraphNode callingMethod) {
+
+        callingMethods.remove(callingMethod);
+        if (callingMethods.size() == 0) {
+            used = false;
+            return false;
+        }
+        return true;
+    }
+
+    public void addCallingMethod(MethodGraphNode callingMethod) {
+
+        callingMethods.add(callingMethod);
     }
 
     public void markAsUsed() {
@@ -79,6 +125,11 @@ public class MethodGraphNode extends MethodNode {
         calledVisited = true;
     }
 
+    public void markAsCheckedByRTA() {
+
+        checkedByRTA = true;
+    }
+
     public boolean isUsed() {
 
         return used;
@@ -92,6 +143,11 @@ public class MethodGraphNode extends MethodNode {
     public boolean isCalledVisited() {
 
         return calledVisited;
+    }
+
+    public boolean isCheckedByRTA() {
+
+        return checkedByRTA;
     }
 
     @Override
@@ -182,7 +238,7 @@ public class MethodGraphNode extends MethodNode {
         return false;
     }
 
-    public MethodGraphNode getCopy(){
+    public MethodGraphNode getCopy() {
 
         return new MethodGraphNode(access, owner, name, desc, null, null);
     }

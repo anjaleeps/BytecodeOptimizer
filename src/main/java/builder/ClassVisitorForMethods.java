@@ -40,13 +40,11 @@ import static org.objectweb.asm.Opcodes.ASM6;
  */
 public class ClassVisitorForMethods extends ClassNode {
 
-    private DependencyCollector collector;
     private Set<String> names = new HashSet<>();
 
-    public ClassVisitorForMethods(DependencyCollector collector) {
+    public ClassVisitorForMethods() {
 
         super(ASM6);
-        this.collector = collector;
     }
 
     @Override
@@ -113,7 +111,7 @@ public class ClassVisitorForMethods extends ClassNode {
         if (mn.isUsed() && !mn.isVisited()) {
 
             mn.markAsVisited();
-            mn.setCollector(collector);
+            mn.setCollector(new DependencyCollector());
             return mn;
         }
 
