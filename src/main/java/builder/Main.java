@@ -28,14 +28,14 @@ public class Main {
         GraphBuilder builder = new GraphBuilder();
         JarHandler jarHandler = new JarHandler(builder);
 
-        String jarName = "helloWorldMain.jar";
+        String jarName = args[0];
         jarHandler.readJar(jarName);
 
-        String rootName = "user/helloWorldMain/___init";
+        String rootName = args[1];
         builder.setRootNode(rootName);
 
         builder.build();
-        jarHandler.writeJar();
+        jarHandler.writeJar(args[2]);
 
         long executionTime = System.nanoTime() - startTime;
 

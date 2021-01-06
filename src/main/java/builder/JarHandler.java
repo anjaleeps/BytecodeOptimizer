@@ -98,14 +98,14 @@ public class JarHandler {
         }
     }
 
-    public void writeJar() {
+    public void writeJar(String newJarName) {
 
         File file = new File(jarName);
 
         try (JarFile jar = new JarFile(file)) {
 
             //create a new jar file to add the optimized program files
-            try (JarOutputStream newJar = new JarOutputStream(new FileOutputStream("modified.jar"))) {
+            try (JarOutputStream newJar = new JarOutputStream(new FileOutputStream(newJarName))) {
                 byte[] buffer = new byte[1024];
                 int bytesRead;
                 int num = 0;

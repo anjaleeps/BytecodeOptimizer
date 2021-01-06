@@ -11,13 +11,20 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.ow2.asm:asm:9.0'
-    implementation 'org.ow2.asm:asm-util:9.0'
+    compile 'org.ow2.asm:asm:9.0'
+    compile 'org.ow2.asm:asm-util:9.0'
     compile 'commons-io:commons-io:2.8.0'
 }
 
-run{
-//    jvmArgs = ['-Xss2m']
+jar {
+    manifest {
+        attributes "Main-Class": "builder.Main"
+    }
+
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
 }
+
 
 mainClassName = 'builder.Main'
