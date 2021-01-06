@@ -31,7 +31,7 @@ import org.objectweb.asm.tree.MethodNode;
 import java.util.List;
 import java.util.Set;
 
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM9;
 
 /**
  * A class node visitor to visit the class attributes and annotations of a graph node.
@@ -44,7 +44,7 @@ public class ClassNodeVisitor extends ClassNode {
 
     public ClassNodeVisitor() {
 
-        super(ASM6);
+        super(ASM9);
         isAnonymousClass = false;
     }
 

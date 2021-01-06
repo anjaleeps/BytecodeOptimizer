@@ -11,8 +11,8 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.ow2.asm:asm:6.0'
-    implementation 'org.ow2.asm:asm-util:6.0'
+    implementation 'org.ow2.asm:asm:9.0'
+    implementation 'org.ow2.asm:asm-util:9.0'
     compile 'commons-io:commons-io:2.8.0'
 }
 

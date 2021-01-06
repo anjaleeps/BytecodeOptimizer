@@ -21,7 +21,7 @@ package builder;
 
 import org.objectweb.asm.signature.SignatureVisitor;
 
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM9;
 
 public class SignatureNodeVisitor extends SignatureVisitor {
 
@@ -30,7 +30,7 @@ public class SignatureNodeVisitor extends SignatureVisitor {
 
     public SignatureNodeVisitor(DependencyCollector collector) {
 
-        super(ASM6);
+        super(ASM9);
         this.collector = collector;
     }
 

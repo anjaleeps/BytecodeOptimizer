@@ -22,14 +22,14 @@ package builder;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Type;
 
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM9;
 
 public class AnnotationNodeVisitor extends AnnotationVisitor {
 
     private DependencyCollector collector;
     public AnnotationNodeVisitor(DependencyCollector collector) {
 
-        super(ASM6);
+        super(ASM9);
         this.collector = collector;
     }
 

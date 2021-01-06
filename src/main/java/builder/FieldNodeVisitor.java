@@ -22,7 +22,7 @@ package builder;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.FieldVisitor;
 
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM9;
 
 public class FieldNodeVisitor extends FieldVisitor {
 
@@ -30,7 +30,7 @@ public class FieldNodeVisitor extends FieldVisitor {
 
     public FieldNodeVisitor(DependencyCollector collector) {
 
-        super(ASM6);
+        super(ASM9);
         this.collector = collector;
     }
 

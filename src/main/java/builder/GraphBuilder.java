@@ -32,8 +32,10 @@ import org.objectweb.asm.tree.MethodNode;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A class to handle the graph creation and visiting
@@ -45,12 +47,12 @@ public class GraphBuilder {
     List<MethodGraphNode> mns = new ArrayList<>();
     private Map<String, ClassGraphNode> nodes;
     private Map<String, ClassGraphNode> javaNodes;
-    private List<String> instantiatedClasses;
+    private Set<String> instantiatedClasses;
     private int visitedCount;
     private int usedCount;
     private ClassGraphNode rootNode;
     private MethodGraphNode mainMethod;
-    private RTA rta;
+    private UninstantiatedMethodRemover uninstantiatedMethodRemover;
 
     public GraphBuilder() {
 
@@ -58,7 +60,7 @@ public class GraphBuilder {
         usedCount = 0;
         nodes = new HashMap<>();
         javaNodes = new HashMap<>();
-        instantiatedClasses = new ArrayList<>();
+        instantiatedClasses = new HashSet<>();
     }
 
     public void build() {
@@ -68,8 +70,8 @@ public class GraphBuilder {
         completeNodeVisit(rootNode);
         markMainMethod();
         findLinkedMethods(rootNode);
-        rta = new RTA(instantiatedClasses, mainMethod, this);
-        rta.start();
+        uninstantiatedMethodRemover = new UninstantiatedMethodRemover(instantiatedClasses, mainMethod, this);
+        uninstantiatedMethodRemover.start();
     }
 
     /**
@@ -107,6 +109,15 @@ public class GraphBuilder {
                 visitDependencies(method);
 
                 InsnList instructions = method.instructions;
+//
+//                for (int i=0; i< instructions.size(); i++ ){
+//                    if (instructions.get(i).getType() == AbstractInsnNode.METHOD_INSN){
+//                        MethodInsnNode methodInsnNode = (MethodInsnNode) instructions.get(i);
+//                        if (methodInsnNode.getOpcode() == Opcodes.INVOKESPECIAL) {
+//                            instantiatedClasses.add(methodInsnNode.owner);
+//                        }
+//                    }
+//                }
 
                 for (int i = 0; i < instructions.size(); i++) {
                     AbstractInsnNode insnNode = instructions.get(i);
@@ -153,17 +164,18 @@ public class GraphBuilder {
         //if the called method instantiate an object, add it's class name to the list of initialized classes
         if (methodInsnNode.getOpcode() == Opcodes.INVOKESPECIAL) {
             instantiatedClasses.add(methodInsnNode.owner);
+            method.instantiatedClasses.add(methodInsnNode.owner);
         }
 
         MethodGraphNode foundMethod = findMethodInClass(owner, mn);
 
         if (foundMethod != null) {
 
-            boolean calledVisitedTemp = foundMethod.isCalledVisited();
+            boolean calledVisitedOld = foundMethod.isCalledVisited();
 
             checkUsedMethod(owner, foundMethod, method, false);
 
-            if (resolvedAtRuntime && !calledVisitedTemp) {
+            if (resolvedAtRuntime && !calledVisitedOld) {
                 checkChildrenForUsedMethod(owner, mn, method);
             }
         } else {
@@ -429,24 +441,28 @@ public class GraphBuilder {
      **/
     public void visitDependencies(MethodGraphNode method) {
 
-        for (String dependencyName : method.getDependencies()) {
+        Set<ClassGraphNode> dependentClassNodes = new HashSet<>();
 
-            ClassGraphNode dependencyClassNode = getNodeByName(dependencyName);
-            if (dependencyClassNode == null){
+        for (String dependentClassName : method.getDependentClassNames()) {
+
+            ClassGraphNode dependentClassNode = getNodeByName(dependentClassName);
+            if (dependentClassNode == null){
                 continue;
             }
 
-            dependencyClassNode.addNewMethodUsedIn(method);
+            dependentClassNodes.add(dependentClassNode);
+            dependentClassNode.addNewMethodUsedIn(method);
 
-            if (!dependencyClassNode.isVisited()) {
-                visitNode(dependencyClassNode);
+            if (!dependentClassNode.isVisited()) {
+                visitNode(dependentClassNode);
             }
-            if (!dependencyClassNode.isUsed()) {
-                dependencyClassNode.markAsUsed();
-                completeNodeVisit(dependencyClassNode);
-                findLinkedMethods(dependencyClassNode);
+            if (!dependentClassNode.isUsed()) {
+                dependentClassNode.markAsUsed();
+                completeNodeVisit(dependentClassNode);
+                findLinkedMethods(dependentClassNode);
             }
         }
+        method.setDependentClassNodes(dependentClassNodes);
     }
 
     /**

@@ -32,7 +32,7 @@ import org.objectweb.asm.tree.ClassNode;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM9;
 
 /**
  * A class node visitor that returns a method node visitor for every used and not visited method when visiting methods
@@ -44,7 +44,7 @@ public class ClassVisitorForMethods extends ClassNode {
 
     public ClassVisitorForMethods() {
 
-        super(ASM6);
+        super(ASM9);
     }
 
     @Override

@@ -25,12 +25,10 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.TypePath;
 import org.objectweb.asm.tree.MethodNode;
 
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM9;
 
 /**
  * A class representing a node for each method inside a ClassGraphNode.
@@ -42,20 +40,22 @@ public class MethodGraphNode extends MethodNode {
     private Set<MethodGraphNode> resolvedAtRuntimeMethodCalls = new HashSet<>();
     private Set<MethodGraphNode> otherMethodCalls = new HashSet<>();
     private Set<MethodGraphNode> callingMethods = new HashSet<>();
+    private Set<ClassGraphNode> dependentClassNodes = new HashSet<>();
+    Set<String> instantiatedClasses = new HashSet<>();
     private DependencyCollector collector;
     private boolean used;
     private boolean visited;
     private boolean calledVisited;
-    private boolean checkedByRTA;
+    private boolean checkedForUninstantiatedOwner;
 
     public MethodGraphNode(int access, String owner, String name, String desc, String signature, String[] exceptions) {
 
-        super(ASM6, access, name, desc, signature, exceptions);
+        super(ASM9, access, name, desc, signature, exceptions);
         this.owner = owner;
         used = false;
         visited = false;
         calledVisited = false;
-        checkedByRTA = false;
+        checkedForUninstantiatedOwner = false;
     }
 
     public void setCollector(DependencyCollector collector) {
@@ -63,7 +63,15 @@ public class MethodGraphNode extends MethodNode {
         this.collector = collector;
     }
 
-    public Set<String> getDependencies(){
+    public void setDependentClassNodes(Set<ClassGraphNode> dependentClassNodes){
+        this.dependentClassNodes = dependentClassNodes;
+    }
+
+    public Set<ClassGraphNode> getDependentClassNodes(){
+        return dependentClassNodes;
+    }
+
+    public Set<String> getDependentClassNames(){
 
         return collector.getDependencies();
     }
@@ -92,6 +100,10 @@ public class MethodGraphNode extends MethodNode {
         resolvedAtRuntimeMethodCalls.remove(calledMethod);
     }
 
+    public void removeOtherMethodCall(MethodGraphNode calledMethod){
+        otherMethodCalls.remove(calledMethod);
+    }
+
     public boolean removeCallingMethod(MethodGraphNode callingMethod) {
 
         callingMethods.remove(callingMethod);
@@ -100,6 +112,11 @@ public class MethodGraphNode extends MethodNode {
             return false;
         }
         return true;
+    }
+
+    public void removeDependentClassNode(ClassGraphNode dependentNode){
+
+        dependentClassNodes.remove(dependentNode);
     }
 
     public void addCallingMethod(MethodGraphNode callingMethod) {
@@ -117,6 +134,12 @@ public class MethodGraphNode extends MethodNode {
         visited = true;
     }
 
+    public void markAsUnused(){
+
+        used = false;
+        callingMethods = new HashSet<>();
+    }
+
     /**
      * Mark the method when every method call made inside the current method node is visited
      */
@@ -127,7 +150,7 @@ public class MethodGraphNode extends MethodNode {
 
     public void markAsCheckedByRTA() {
 
-        checkedByRTA = true;
+        checkedForUninstantiatedOwner = true;
     }
 
     public boolean isUsed() {
@@ -145,9 +168,9 @@ public class MethodGraphNode extends MethodNode {
         return calledVisited;
     }
 
-    public boolean isCheckedByRTA() {
+    public boolean isCheckedForUninstantiatedOwner() {
 
-        return checkedByRTA;
+        return checkedForUninstantiatedOwner;
     }
 
     @Override

@@ -19,17 +19,18 @@
 
 package builder;
 
+import org.objectweb.asm.tree.MethodNode;
+
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
-public class RTA {
+public class UninstantiatedMethodRemover {
 
-    List<String> instantiatedClassNames;
+    Set<String> instantiatedClassNames;
     MethodGraphNode mainMethod;
     GraphBuilder builder;
 
-    public RTA(List<String> instantiatedClassNames, MethodGraphNode mainMethod, GraphBuilder builder) {
+    public UninstantiatedMethodRemover(Set<String> instantiatedClassNames, MethodGraphNode mainMethod, GraphBuilder builder) {
 
         this.instantiatedClassNames = instantiatedClassNames;
         this.mainMethod = mainMethod;
@@ -47,13 +48,15 @@ public class RTA {
         Set<MethodGraphNode> calledMethods = new HashSet<>(method.getResolvedAtRuntimeMethodCalls());
         for (MethodGraphNode calledMethod : calledMethods) {
             if (!instantiatedClassNames.contains(calledMethod.owner)) {
+                calledMethod.markAsUnused();
+                method.removeResolvedAtRuntimeMethodCall(calledMethod);
                 removeCallingMethod(calledMethod, method);
-            } else if (!calledMethod.isCheckedByRTA()) {
+            } else if (!calledMethod.isCheckedForUninstantiatedOwner()) {
                 visitMethodCalls(calledMethod);
             }
         }
         for (MethodGraphNode calledMethod : method.getOtherMethodCalls()) {
-            if (!calledMethod.isCheckedByRTA()) {
+            if (!calledMethod.isCheckedForUninstantiatedOwner()) {
                 visitMethodCalls(calledMethod);
             }
         }
@@ -61,17 +64,34 @@ public class RTA {
 
     public void checkSubGraph(MethodGraphNode unusedMethod) {
 
-        for (MethodGraphNode calledMethod : unusedMethod.getResolvedAtRuntimeMethodCalls()) {
+        Set<MethodGraphNode> calledMethods = new HashSet<>(unusedMethod.getResolvedAtRuntimeMethodCalls());
+        for (MethodGraphNode calledMethod : calledMethods) {
+            unusedMethod.removeResolvedAtRuntimeMethodCall(calledMethod);
             removeCallingMethod(calledMethod, unusedMethod);
         }
-        for (MethodGraphNode calledMethod : unusedMethod.getOtherMethodCalls()) {
+
+        calledMethods = new HashSet<>(unusedMethod.getOtherMethodCalls());
+        for (MethodGraphNode calledMethod : calledMethods) {
+            unusedMethod.removeOtherMethodCall(calledMethod);
             removeCallingMethod(calledMethod, unusedMethod);
+        }
+
+        Set<ClassGraphNode> dependentClasses = new HashSet<>(unusedMethod.getDependentClassNodes());
+        for (ClassGraphNode dependentClassNode : dependentClasses){
+            unusedMethod.removeDependentClassNode(dependentClassNode);
+            boolean isUsedByAny = dependentClassNode.removeMethodUsedIn(unusedMethod);
+            if (!isUsedByAny){
+                for (MethodNode mn : dependentClassNode.methods){
+                    MethodGraphNode method = (MethodGraphNode) mn;
+                    method.markAsUnused();
+                    checkSubGraph(method);
+                }
+            }
         }
     }
 
     public void removeCallingMethod(MethodGraphNode calledMethod, MethodGraphNode callingMethod) {
 
-        calledMethod.removeResolvedAtRuntimeMethodCall(calledMethod);
         boolean isCalledByAny = calledMethod.removeCallingMethod(callingMethod);
         if (!isCalledByAny) {
             checkSubGraph(calledMethod);

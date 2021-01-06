@@ -28,10 +28,10 @@ public class Main {
         GraphBuilder builder = new GraphBuilder();
         JarHandler jarHandler = new JarHandler(builder);
 
-        String jarName = "helloWorld.jar";
+        String jarName = "helloWorldMain.jar";
         jarHandler.readJar(jarName);
 
-        String rootName = "user/helloWorld/___init";
+        String rootName = "user/helloWorldMain/___init";
         builder.setRootNode(rootName);
 
         builder.build();

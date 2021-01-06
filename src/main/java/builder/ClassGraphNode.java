@@ -30,7 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM9;
 
 /**
  * A class representing a node created for each class file in the jar file
@@ -38,7 +38,6 @@ import static org.objectweb.asm.Opcodes.ASM6;
 public class ClassGraphNode extends ClassNode {
 
     private List<ClassGraphNode> childNodes = new ArrayList<>();
-    private Set<ClassGraphNode> dependencies = new HashSet<>();
     private Set<MethodGraphNode> methodsUsedIn = new HashSet<>();
     private ClassReader reader;
     private ClassGraphNode superNode;
@@ -49,7 +48,7 @@ public class ClassGraphNode extends ClassNode {
 
     public ClassGraphNode(String name) {
 
-        super(ASM6);
+        super(ASM9);
         this.name = name;
         visited = false;
         used = false;
@@ -91,12 +90,14 @@ public class ClassGraphNode extends ClassNode {
         methodsUsedIn.add(methodUsedIn);
     }
 
-    public void removeMethodUsedIn(MethodGraphNode methodUsedIn) {
+    public boolean removeMethodUsedIn(MethodGraphNode methodUsedIn) {
 
         methodsUsedIn.remove(methodUsedIn);
         if (methodsUsedIn.size() == 0){
             used = false;
+            return false;
         }
+        return true;
     }
 
     public void addChildNode(ClassGraphNode childNode) {
@@ -120,11 +121,6 @@ public class ClassGraphNode extends ClassNode {
     public List<ClassGraphNode> getChildNodes() {
 
         return childNodes;
-    }
-
-    public void setDependencies(Set<ClassGraphNode> dependencies) {
-
-        this.dependencies = dependencies;
     }
 
     public String getSuperName() {

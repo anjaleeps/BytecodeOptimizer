@@ -28,7 +28,7 @@ import org.objectweb.asm.ModuleVisitor;
 import org.objectweb.asm.TypePath;
 import org.objectweb.asm.tree.ClassNode;
 
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM9;
 
 public class UnusedMethodRemover extends ClassNode {
 
@@ -36,7 +36,7 @@ public class UnusedMethodRemover extends ClassNode {
 
     public UnusedMethodRemover(ClassWriter writer) {
 
-        super(ASM6);
+        super(ASM9);
         this.writer = writer;
     }
 
