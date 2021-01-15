@@ -87,6 +87,9 @@ public class GraphBuilder {
                 mainMethod = methodNode;
             }
         }
+        if (mainMethod == null){
+            throw new IllegalArgumentException("The root node does not have a main method");
+        }
     }
 
     /**
@@ -109,7 +112,7 @@ public class GraphBuilder {
                 visitDependencies(method);
 
                 InsnList instructions = method.instructions;
-//
+
 //                for (int i=0; i< instructions.size(); i++ ){
 //                    if (instructions.get(i).getType() == AbstractInsnNode.METHOD_INSN){
 //                        MethodInsnNode methodInsnNode = (MethodInsnNode) instructions.get(i);

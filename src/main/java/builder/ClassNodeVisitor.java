@@ -26,10 +26,6 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.ModuleVisitor;
 import org.objectweb.asm.TypePath;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.MethodNode;
-
-import java.util.List;
-import java.util.Set;
 
 import static org.objectweb.asm.Opcodes.ASM9;
 
@@ -46,6 +42,7 @@ public class ClassNodeVisitor extends ClassNode {
 
         super(ASM9);
         isAnonymousClass = false;
+
     }
 
     /**
@@ -57,6 +54,10 @@ public class ClassNodeVisitor extends ClassNode {
 
         this.name = name;
         this.access = access;
+        String[] parts = name.split("[$]");
+        if (parts.length > 1 && parts[parts.length - 1].matches("\\d+")){
+            isAnonymousClass = true;
+        }
     }
 
     @Override
@@ -72,8 +73,6 @@ public class ClassNodeVisitor extends ClassNode {
 
     @Override
     public void visitOuterClass(String owner, String name, String desc) {
-
-        isAnonymousClass = true;
 
     }
 
@@ -116,6 +115,7 @@ public class ClassNodeVisitor extends ClassNode {
 
         MethodGraphNode mn = new MethodGraphNode(access, this.name, name, desc, signature, exceptions);
         if (name.equals("<init>") || name.equals("<clinit>") || isAnonymousClass) {
+
             mn.markAsUsed();
         }
         methods.add(mn);

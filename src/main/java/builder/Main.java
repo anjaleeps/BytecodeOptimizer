@@ -23,19 +23,27 @@ public class Main {
 
     public static void main(String[] args) {
 
+        if (!(args.length == 3)){
+            throw new IllegalArgumentException("Provide <input.jar> <entry/class/name> <output.jar> as arguments");
+        }
+        String jarName = args[0];
+        String rootName = args[1];
+        String outputJarName = args[2];
+
+        if (!outputJarName.endsWith(".jar")){
+            throw new IllegalArgumentException("Output file name should be of jar type");
+        }
+
         long startTime = System.nanoTime();
 
         GraphBuilder builder = new GraphBuilder();
         JarHandler jarHandler = new JarHandler(builder);
 
-        String jarName = args[0];
         jarHandler.readJar(jarName);
-
-        String rootName = args[1];
         builder.setRootNode(rootName);
 
         builder.build();
-        jarHandler.writeJar(args[2]);
+        jarHandler.writeJar(outputJarName);
 
         long executionTime = System.nanoTime() - startTime;
 

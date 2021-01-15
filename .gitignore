@@ -6,5 +6,6 @@ gradlew
 gladlew.bat
 *.jar
 modified/
+modified-checkstyle/
 *.log
 
