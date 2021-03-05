@@ -33,11 +33,13 @@ import static org.objectweb.asm.Opcodes.ASM9;
 public class UnusedMethodRemover extends ClassNode {
 
     private ClassWriter writer;
+    private ClassGraphNode node;
 
     public UnusedMethodRemover(ClassWriter writer) {
 
         super(ASM9);
         this.writer = writer;
+        this.node = node;
     }
 
     @Override

@@ -24,8 +24,11 @@ import org.objectweb.asm.Attribute;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.ModuleVisitor;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.TypePath;
 import org.objectweb.asm.tree.ClassNode;
+
+import java.util.ArrayList;
 
 import static org.objectweb.asm.Opcodes.ASM9;
 
@@ -37,12 +40,17 @@ public class ClassNodeVisitor extends ClassNode {
 
     private String name;
     private boolean isAnonymousClass;
+    private DependencyCollector collector;
 
     public ClassNodeVisitor() {
 
         super(ASM9);
         isAnonymousClass = false;
 
+    }
+
+    public void setCollector(DependencyCollector collector){
+        this.collector = collector;
     }
 
     /**
@@ -57,6 +65,14 @@ public class ClassNodeVisitor extends ClassNode {
         String[] parts = name.split("[$]");
         if (parts.length > 1 && parts[parts.length - 1].matches("\\d+")){
             isAnonymousClass = true;
+        }
+        if (signature == null) {
+            if (superName != null) {
+                collector.addName(superName);
+            }
+            collector.addInternalNames(interfaces);
+        } else {
+            collector.addSignature(signature);
         }
     }
 
@@ -73,7 +89,9 @@ public class ClassNodeVisitor extends ClassNode {
 
     @Override
     public void visitOuterClass(String owner, String name, String desc) {
-
+        if (desc != null) {
+            collector.addDesc(desc);
+        }
     }
 
     @Override
@@ -83,19 +101,24 @@ public class ClassNodeVisitor extends ClassNode {
 
     @Override
     public void visitAttribute(Attribute attr) {
-
+        collector.addInternalName(attr.type);
+        if (attrs == null) {
+            attrs = new ArrayList<>(1);
+        }
     }
 
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
 
-        return null;
+        collector.addDesc(desc);
+        return new AnnotationNodeVisitor(collector);
     }
 
     @Override
     public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String desc, boolean visible) {
 
-        return null;
+        collector.addDesc(desc);
+        return new AnnotationNodeVisitor(collector);
     }
 
     /**
@@ -104,7 +127,17 @@ public class ClassNodeVisitor extends ClassNode {
     @Override
     public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
 
-        return null;
+        if (signature == null) {
+            collector.addDesc(desc);
+        } else {
+            collector.addSignature(signature);
+        }
+
+        if (value instanceof Type) {
+            collector.addType((Type) value);
+        }
+
+        return new FieldNodeVisitor(collector);
     }
 
     /**
@@ -115,11 +148,16 @@ public class ClassNodeVisitor extends ClassNode {
 
         MethodGraphNode mn = new MethodGraphNode(access, this.name, name, desc, signature, exceptions);
         if (name.equals("<init>") || name.equals("<clinit>") || isAnonymousClass) {
-
             mn.markAsUsed();
         }
         methods.add(mn);
-        return null;
+        if (signature == null) {
+            collector.addMethodDesc(desc);
+        } else {
+            collector.addSignature(signature);
+        }
+        collector.addInternalNames(exceptions);
+        return new MethodNodeVisitor(collector);
     }
 
     @Override

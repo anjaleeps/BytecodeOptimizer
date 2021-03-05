@@ -45,6 +45,7 @@ public class ClassGraphNode extends ClassNode {
     private boolean visited;
     private boolean used;
     private boolean isServiceProvider;
+    private DependencyCollector collector;
 
     public ClassGraphNode(String name) {
 
@@ -53,6 +54,7 @@ public class ClassGraphNode extends ClassNode {
         visited = false;
         used = false;
         isServiceProvider = false;
+        collector = new DependencyCollector();
     }
 
     public boolean isVisited() {
@@ -85,6 +87,11 @@ public class ClassGraphNode extends ClassNode {
         isServiceProvider = true;
     }
 
+    public Set<String> getDependencies(){
+
+        return collector.getDependencies();
+    }
+
     public void addNewMethodUsedIn(MethodGraphNode methodUsedIn) {
 
         methodsUsedIn.add(methodUsedIn);
@@ -93,7 +100,7 @@ public class ClassGraphNode extends ClassNode {
     public boolean removeMethodUsedIn(MethodGraphNode methodUsedIn) {
 
         methodsUsedIn.remove(methodUsedIn);
-        if (methodsUsedIn.size() == 0){
+        if (methodsUsedIn.size() == 0) {
             used = false;
             return false;
         }
@@ -167,14 +174,19 @@ public class ClassGraphNode extends ClassNode {
     @Override
     public void accept(ClassVisitor cv) {
 
-        if (cv instanceof ClassNode) {
-            ClassNode cn = (ClassNode) cv;
-            cn.name = name;
-            cn.methods = methods;
-            cn.access = access;
-            cn.superName = superName;
+        ClassNode cn = (ClassNode) cv;
+        cn.name = name;
+        cn.methods = methods;
+        cn.access = access;
+        cn.superName = superName;
+
+        if (cn instanceof ClassNodeVisitor){
+            ClassNodeVisitor cnv = (ClassNodeVisitor) cn;
+            cnv.setCollector(collector);
         }
 
-        reader.accept(cv, 0);
+        reader.accept(cn, 0);
+        this.methods = cn.methods;
+        this.access = cn.access;
     }
 }

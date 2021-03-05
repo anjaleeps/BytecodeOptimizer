@@ -24,7 +24,6 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
@@ -67,11 +66,37 @@ public class GraphBuilder {
 
         buildClassHierarchy();
         visitNode(rootNode);
-        completeNodeVisit(rootNode);
         markMainMethod();
         findLinkedMethods(rootNode);
-        uninstantiatedMethodRemover = new UninstantiatedMethodRemover(instantiatedClasses, mainMethod, this);
-        uninstantiatedMethodRemover.start();
+//        uninstantiatedMethodRemover = new UninstantiatedMethodRemover(instantiatedClasses, mainMethod, this);
+//        uninstantiatedMethodRemover.start();
+    }
+
+    public void visitNode(ClassGraphNode node) {
+        node.markAsVisited();
+        countVisited();
+
+        node.accept(new ClassNodeVisitor());
+        visitDependentNodes(node);
+        if (node.isServiceProvider()) {
+            visitChildNodes(node);
+        }
+    }
+
+    public void visitDependentNodes(ClassGraphNode node) {
+        for (String className: node.getDependencies()) {
+            if (nodes.get(className) != null && !nodes.get(className).isVisited()) {
+                visitNode(nodes.get(className));
+            }
+        }
+    }
+
+    public void visitChildNodes(ClassGraphNode node) {
+        for (ClassGraphNode childNode : node.getChildNodes()) {
+            if (!childNode.isVisited()){
+                visitNode(childNode);
+            }
+        }
     }
 
     /**
@@ -113,15 +138,6 @@ public class GraphBuilder {
 
                 InsnList instructions = method.instructions;
 
-//                for (int i=0; i< instructions.size(); i++ ){
-//                    if (instructions.get(i).getType() == AbstractInsnNode.METHOD_INSN){
-//                        MethodInsnNode methodInsnNode = (MethodInsnNode) instructions.get(i);
-//                        if (methodInsnNode.getOpcode() == Opcodes.INVOKESPECIAL) {
-//                            instantiatedClasses.add(methodInsnNode.owner);
-//                        }
-//                    }
-//                }
-
                 for (int i = 0; i < instructions.size(); i++) {
                     AbstractInsnNode insnNode = instructions.get(i);
 
@@ -147,7 +163,7 @@ public class GraphBuilder {
 
         ClassGraphNode owner = getNodeByName(methodInsnNode.owner);
 
-        //Create MethodGraphNode for the method called inside the currently traversing method                      checkChildrenForUsedMethod(owner, mn, method);
+        //Create MethodGraphNode for the method called inside the currently traversing method
         MethodGraphNode mn = new MethodGraphNode(0, methodInsnNode.owner,
                 methodInsnNode.name, methodInsnNode.desc, null, null);
 
@@ -227,7 +243,7 @@ public class GraphBuilder {
     public MethodGraphNode findMethodInClass(ClassGraphNode classNode, MethodGraphNode methodNode) {
 
         if (!classNode.isVisited()) {
-            visitNode(classNode);
+            return null;
         }
 
         int index = classNode.methods.indexOf(methodNode);
@@ -247,9 +263,6 @@ public class GraphBuilder {
 
         if (!owner.isUsed()) {
             owner.markAsUsed();
-
-            //visit the dependencies and if necessary, child classes, of the owner node
-            completeNodeVisit(owner);
         }
 
         //add the used method to the list of methods called inside the currently traversing method
@@ -292,7 +305,6 @@ public class GraphBuilder {
                 if (resolvedAtRuntime && !calledVisitedOld) {
                     checkChildrenForUsedMethod(superNode, mn, current);
                 }
-
                 return true;
             } else {
                 return checkParentForUsedMethod(superNode, mn, current, resolvedAtRuntime);
@@ -400,17 +412,6 @@ public class GraphBuilder {
     }
 
     /**
-     * Visit the ClassGraphNode for the first time using ClassNodeVisitor
-     **/
-    public void visitNode(ClassGraphNode node) {
-
-        ClassNodeVisitor cv = new ClassNodeVisitor();
-        node.accept(cv);
-        updateNode(node, cv);
-        countVisited();
-    }
-
-    /**
      * Visit the unvisited methods marked as used inside a class
      */
     public void visitNodeForMethods(ClassGraphNode node) {
@@ -419,24 +420,6 @@ public class GraphBuilder {
 
         //Visit the ClassGraphNode for the second time using the ClassVisitorForMethods
         node.accept(cv);
-        updateNode(node, cv);
-    }
-
-    /**
-     * Complete the node visit by visiting dependencies and child classes
-     * after marking the node as used
-     */
-    public void completeNodeVisit(ClassGraphNode node) {
-
-        for (ClassGraphNode interfaceNode: node.getInterfaceNodes()){
-            if (!interfaceNode.isVisited()){
-                visitNode(interfaceNode);
-            }
-            if (!interfaceNode.isUsed()){
-                interfaceNode.markAsUsed();
-                completeNodeVisit(interfaceNode);
-            }
-        }
     }
 
     /**
@@ -457,27 +440,16 @@ public class GraphBuilder {
             dependentClassNode.addNewMethodUsedIn(method);
 
             if (!dependentClassNode.isVisited()) {
-                visitNode(dependentClassNode);
+                return;
             }
             if (!dependentClassNode.isUsed()) {
                 dependentClassNode.markAsUsed();
-                completeNodeVisit(dependentClassNode);
                 findLinkedMethods(dependentClassNode);
             }
         }
         method.setDependentClassNodes(dependentClassNodes);
     }
 
-    /**
-     * Pass the information gathered by the ClassVisitor to the ClassGraphNode object
-     **/
-    public void updateNode(ClassGraphNode node, ClassNode cv) {
-
-        node.methods = cv.methods;
-        node.access = cv.access;
-        node.markAsVisited();
-        nodes.put(node.name, node);
-    }
 
     /**
      * Visit every ClassGraphNode created and build a class hierarchy by assigning their child and super nodes

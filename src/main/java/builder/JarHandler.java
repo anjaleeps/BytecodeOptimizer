@@ -20,6 +20,7 @@
 package builder;
 
 import org.apache.commons.io.IOUtils;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.io.ByteArrayInputStream;
@@ -119,21 +120,11 @@ public class JarHandler {
                         ClassGraphNode classGraphNode = builder.getNodeByName(className);
 
                         //If the ClassGraphNode is not marked as used don't add it to the final jar file.
-                        if (!classGraphNode.isUsed()) {
+                        if (!classGraphNode.isUsed() && ((classGraphNode.access & Opcodes.ACC_INTERFACE) == 0)) {
                             continue;
                         }
 
                         builder.countUsed();
-
-//                        if (className.contains("LogFactory")){
-//                            System.out.println(className);
-//                            for (MethodNode mn : classGraphNode.methods){
-//                                if (((MethodGraphNode) mn).isUsed()){
-//                                    System.out.println(mn.name);
-//                                }
-//                            }
-//                        }
-
 
                         //remove unused methods and get the byte array of the modified class
                         byte[] modifiedClassBytes = builder.removeUnusedMethods(classGraphNode);
