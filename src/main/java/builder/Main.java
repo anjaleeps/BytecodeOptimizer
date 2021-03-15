@@ -26,9 +26,9 @@ public class Main {
         if (!(args.length == 3)){
             throw new IllegalArgumentException("Provide <input.jar> <entry/class/name> <output.jar> as arguments");
         }
-        String jarName = args[0];
-        String rootName = args[1];
-        String outputJarName = args[2];
+        String jarName = args[0].trim();
+        String rootName = args[1].trim();
+        String outputJarName = args[2].trim();
 
         if (!outputJarName.endsWith(".jar")){
             throw new IllegalArgumentException("Output file name should be of jar type");
@@ -41,6 +41,7 @@ public class Main {
 
         jarHandler.readJar(jarName);
         builder.setRootNode(rootName);
+
 
         builder.build();
         jarHandler.writeJar(outputJarName);

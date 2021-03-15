@@ -25,6 +25,7 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.ModuleVisitor;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.TypePath;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -33,13 +34,11 @@ import static org.objectweb.asm.Opcodes.ASM9;
 public class UnusedMethodRemover extends ClassNode {
 
     private ClassWriter writer;
-    private ClassGraphNode node;
 
     public UnusedMethodRemover(ClassWriter writer) {
 
         super(ASM9);
         this.writer = writer;
-        this.node = node;
     }
 
     @Override
@@ -62,15 +61,19 @@ public class UnusedMethodRemover extends ClassNode {
     }
 
     @Override
-    public void visitOuterClass(String owner, String name, String desc) {
-
-        writer.visitOuterClass(owner, name, desc);
-    }
-
-    @Override
     public void visitInnerClass(String name, String outerName, String innerName, int access) {
 
         writer.visitInnerClass(name, outerName, innerName, access);
+    }
+
+    @Override
+    public void visitNestHost(String nestHost) {
+        writer.visitNestHost(nestHost);
+    }
+
+    @Override
+    public void visitNestMember(String nestMember) {
+        writer.visitNestMember(nestMember);
     }
 
     @Override

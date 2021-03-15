@@ -81,7 +81,7 @@ public class JarHandler {
                     }
 
                     //if file name ends with .class create a ClassGraphNode for it
-                    if (entry.getName().endsWith(".class")) {
+                    if (entry.getName().endsWith(".class") && !entry.getName().endsWith("module-info.class")) {
                         String className = getEntryClassName(entry.getName());
                         createNodeForClassFile(className, bytes);
                     }
@@ -115,7 +115,7 @@ public class JarHandler {
                     JarEntry entry = entries.nextElement();
                     InputStream stream;
 
-                    if (entry.getName().endsWith(".class")) {
+                    if (entry.getName().endsWith(".class") && !entry.getName().endsWith("module-info.class")) {
                         String className = getEntryClassName(entry.getName());
                         ClassGraphNode classGraphNode = builder.getNodeByName(className);
 

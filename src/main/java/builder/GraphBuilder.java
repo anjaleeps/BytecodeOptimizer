@@ -43,15 +43,12 @@ public class GraphBuilder {
 
     static int visitedMethodCount;
     static int totalMethodCount;
-    List<MethodGraphNode> mns = new ArrayList<>();
     private Map<String, ClassGraphNode> nodes;
     private Map<String, ClassGraphNode> javaNodes;
-    private Set<String> instantiatedClasses;
     private int visitedCount;
     private int usedCount;
     private ClassGraphNode rootNode;
     private MethodGraphNode mainMethod;
-    private UninstantiatedMethodRemover uninstantiatedMethodRemover;
 
     public GraphBuilder() {
 
@@ -59,7 +56,6 @@ public class GraphBuilder {
         usedCount = 0;
         nodes = new HashMap<>();
         javaNodes = new HashMap<>();
-        instantiatedClasses = new HashSet<>();
     }
 
     public void build() {
@@ -68,8 +64,6 @@ public class GraphBuilder {
         visitNode(rootNode);
         markMainMethod();
         findLinkedMethods(rootNode);
-//        uninstantiatedMethodRemover = new UninstantiatedMethodRemover(instantiatedClasses, mainMethod, this);
-//        uninstantiatedMethodRemover.start();
     }
 
     public void visitNode(ClassGraphNode node) {
@@ -180,12 +174,6 @@ public class GraphBuilder {
             return;
         }
 
-        //if the called method instantiate an object, add it's class name to the list of initialized classes
-        if (methodInsnNode.getOpcode() == Opcodes.INVOKESPECIAL) {
-            instantiatedClasses.add(methodInsnNode.owner);
-            method.instantiatedClasses.add(methodInsnNode.owner);
-        }
-
         MethodGraphNode foundMethod = findMethodInClass(owner, mn);
 
         if (foundMethod != null) {
@@ -266,7 +254,7 @@ public class GraphBuilder {
         }
 
         //add the used method to the list of methods called inside the currently traversing method
-        current.addMethodCall(usedMethod, resolvedAtRuntime);
+        current.addMethodCall(usedMethod);
         usedMethod.addCallingMethod(current);
 
         usedMethod.markAsUsed();
@@ -427,29 +415,19 @@ public class GraphBuilder {
      **/
     public void visitDependencies(MethodGraphNode method) {
 
-        Set<ClassGraphNode> dependentClassNodes = new HashSet<>();
-
         for (String dependentClassName : method.getDependentClassNames()) {
 
             ClassGraphNode dependentClassNode = getNodeByName(dependentClassName);
-            if (dependentClassNode == null){
+            if (dependentClassNode == null || !dependentClassNode.isVisited()){
                 continue;
             }
 
-            dependentClassNodes.add(dependentClassNode);
-            dependentClassNode.addNewMethodUsedIn(method);
-
-            if (!dependentClassNode.isVisited()) {
-                return;
-            }
             if (!dependentClassNode.isUsed()) {
                 dependentClassNode.markAsUsed();
                 findLinkedMethods(dependentClassNode);
             }
         }
-        method.setDependentClassNodes(dependentClassNodes);
     }
-
 
     /**
      * Visit every ClassGraphNode created and build a class hierarchy by assigning their child and super nodes

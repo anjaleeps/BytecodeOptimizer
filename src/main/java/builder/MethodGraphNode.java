@@ -38,16 +38,12 @@ import static org.objectweb.asm.Opcodes.ASM9;
 public class MethodGraphNode extends MethodNode {
 
     String owner;
-    private Set<MethodGraphNode> resolvedAtRuntimeMethodCalls = new HashSet<>();
-    private Set<MethodGraphNode> otherMethodCalls = new HashSet<>();
+    private Set<MethodGraphNode> methodCalls = new HashSet<>();
     private Set<MethodGraphNode> callingMethods = new HashSet<>();
-    private Set<ClassGraphNode> dependentClassNodes = new HashSet<>();
-    Set<String> instantiatedClasses = new HashSet<>();
     private DependencyCollector collector;
     private boolean used;
     private boolean visited;
     private boolean calledVisited;
-    private boolean checkedForUninstantiatedOwner;
 
     public MethodGraphNode(int access, String owner, String name, String desc, String signature, String[] exceptions) {
 
@@ -56,7 +52,6 @@ public class MethodGraphNode extends MethodNode {
         used = false;
         visited = false;
         calledVisited = false;
-        checkedForUninstantiatedOwner = false;
     }
 
     public void setCollector(DependencyCollector collector) {
@@ -64,64 +59,16 @@ public class MethodGraphNode extends MethodNode {
         this.collector = collector;
     }
 
-    public void setDependentClassNodes(Set<ClassGraphNode> dependentClassNodes){
-        this.dependentClassNodes = dependentClassNodes;
-    }
-
-    public Set<ClassGraphNode> getDependentClassNodes(){
-        return dependentClassNodes;
-    }
-
     public Set<String> getDependentClassNames(){
 
         return collector.getDependencies();
     }
 
-    public Set<MethodGraphNode> getResolvedAtRuntimeMethodCalls() {
-
-        return resolvedAtRuntimeMethodCalls;
-    }
-
-    public Set<MethodGraphNode> getOtherMethodCalls() {
-
-        return otherMethodCalls;
-    }
-
-    public void addMethodCall(MethodGraphNode calledMethod, boolean resolvedAtRuntime) {
-
-        if (resolvedAtRuntime) {
-            resolvedAtRuntimeMethodCalls.add(calledMethod);
-        } else {
-            otherMethodCalls.add(calledMethod);
-        }
-    }
-
-    public void removeResolvedAtRuntimeMethodCall(MethodGraphNode calledMethod) {
-
-        resolvedAtRuntimeMethodCalls.remove(calledMethod);
-    }
-
-    public void removeOtherMethodCall(MethodGraphNode calledMethod){
-        otherMethodCalls.remove(calledMethod);
-    }
-
-    public boolean removeCallingMethod(MethodGraphNode callingMethod) {
-
-        callingMethods.remove(callingMethod);
-        if (callingMethods.size() == 0) {
-            used = false;
-            return false;
-        }
-        return true;
-    }
-
-    public void removeDependentClassNode(ClassGraphNode dependentNode){
-
-        dependentClassNodes.remove(dependentNode);
+    public void addMethodCall(MethodGraphNode calledMethod) {
+        methodCalls.add(calledMethod);
     }
 
     public void addCallingMethod(MethodGraphNode callingMethod) {
-
         callingMethods.add(callingMethod);
     }
 
@@ -135,23 +82,12 @@ public class MethodGraphNode extends MethodNode {
         visited = true;
     }
 
-    public void markAsUnused(){
-
-        used = false;
-        callingMethods = new HashSet<>();
-    }
-
     /**
      * Mark the method when every method call made inside the current method node is visited
      */
     public void markAsCalledVisited() {
 
         calledVisited = true;
-    }
-
-    public void markAsCheckedByRTA() {
-
-        checkedForUninstantiatedOwner = true;
     }
 
     public boolean isUsed() {
@@ -169,41 +105,36 @@ public class MethodGraphNode extends MethodNode {
         return calledVisited;
     }
 
-    public boolean isCheckedForUninstantiatedOwner() {
-
-        return checkedForUninstantiatedOwner;
-    }
-
     @Override
     public AnnotationVisitor visitAnnotationDefault() {
 
-        return new AnnotationNodeVisitor(collector);
+        return null;
     }
 
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
 
         collector.addDesc(desc);
-        return new AnnotationNodeVisitor(collector);
+        return null;
     }
 
     @Override
     public AnnotationVisitor visitParameterAnnotation(int parameter, String desc, boolean visible) {
 
         collector.addDesc(desc);
-        return new AnnotationNodeVisitor(collector);
+        return null;
     }
 
     @Override
     public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String desc, boolean visible) {
 
         collector.addDesc(desc);
-        return new AnnotationNodeVisitor(collector);
+        return null;
     }
 
     @Override
     public void visitTypeInsn(int opcode, String type) {
-
+        collector.addInternalName(owner);
     }
 
     @Override
@@ -218,6 +149,8 @@ public class MethodGraphNode extends MethodNode {
     @Override
     public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
 
+        collector.addInternalName(owner);
+        collector.addMethodDesc(desc);
         super.visitMethodInsn(opcode, owner, name, desc, itf);
     }
 
