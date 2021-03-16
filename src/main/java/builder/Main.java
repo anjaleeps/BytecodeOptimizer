@@ -23,7 +23,8 @@ public class Main {
 
     public static void main(String[] args) {
 
-        ConfigReader configReader = new ConfigReader();
+        String configFilePath = args[0].trim();
+        ConfigReader configReader = new ConfigReader(configFilePath);
         GraphBuilder builder = new GraphBuilder(configReader);
         JarHandler jarHandler = new JarHandler(builder, configReader);
 

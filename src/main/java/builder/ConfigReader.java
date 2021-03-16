@@ -30,17 +30,16 @@ import java.util.stream.Collectors;
 
 public class ConfigReader {
 
-    private static final String CONFIG_FILE_NAME = "optimizer.config";
     final String inputJarName;
     final String outputJarName;
     final String rootName;
     final boolean optimizeClassesOnly;
     private List<String> keepClasses = new ArrayList<>();
 
-    public ConfigReader() {
+    public ConfigReader(String configFilePath) {
         Properties properties = new Properties();
 
-        try (FileReader reader = new FileReader(CONFIG_FILE_NAME)) {
+        try (FileReader reader = new FileReader(configFilePath)) {
             properties.load(reader);
             this.inputJarName = properties.getProperty("inputJar");
             this.rootName = properties.getProperty("rootName");
