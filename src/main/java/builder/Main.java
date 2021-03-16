@@ -23,36 +23,18 @@ public class Main {
 
     public static void main(String[] args) {
 
-        if (!(args.length == 3)){
-            throw new IllegalArgumentException("Provide <input.jar> <entry/class/name> <output.jar> as arguments");
-        }
-        String jarName = args[0].trim();
-        String rootName = args[1].trim();
-        String outputJarName = args[2].trim();
+        ConfigReader configReader = new ConfigReader();
+        GraphBuilder builder = new GraphBuilder(configReader);
+        JarHandler jarHandler = new JarHandler(builder, configReader);
 
-        if (!outputJarName.endsWith(".jar")){
-            throw new IllegalArgumentException("Output file name should be of jar type");
-        }
-
-        long startTime = System.nanoTime();
-
-        GraphBuilder builder = new GraphBuilder();
-        JarHandler jarHandler = new JarHandler(builder);
-
-        jarHandler.readJar(jarName);
-        builder.setRootNode(rootName);
-
-
+        jarHandler.readJar();
         builder.build();
-        jarHandler.writeJar(outputJarName);
-
-        long executionTime = System.nanoTime() - startTime;
+        jarHandler.writeJar();
 
         System.out.println("Total Nodes: " + builder.getGraphSize());
         System.out.println("Visited Nodes: " + builder.getVisitedCount());
         System.out.println("Used Nodes: " + builder.getUsedCount());
         System.out.println("Total methods: " + GraphBuilder.totalMethodCount);
         System.out.println("visited methods: " + GraphBuilder.visitedMethodCount);
-        System.out.println("Execution Time in Millis: " + executionTime / 1000000);
     }
 }

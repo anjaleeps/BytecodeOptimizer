@@ -45,6 +45,7 @@ public class ClassGraphNode extends ClassNode {
     private boolean visited;
     private boolean used;
     private boolean isServiceProvider;
+    private boolean keep;
     private DependencyCollector collector;
 
     public ClassGraphNode(String name) {
@@ -54,6 +55,7 @@ public class ClassGraphNode extends ClassNode {
         visited = false;
         used = false;
         isServiceProvider = false;
+        keep = false;
         collector = new DependencyCollector();
     }
 
@@ -80,6 +82,14 @@ public class ClassGraphNode extends ClassNode {
     public boolean isServiceProvider() {
 
         return isServiceProvider;
+    }
+
+    public void markAsKeep() {
+        keep = true;
+    }
+
+    public boolean isKept() {
+        return keep;
     }
 
     public void markAsServiceProvider() {

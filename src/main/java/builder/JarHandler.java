@@ -42,20 +42,20 @@ import java.util.zip.ZipEntry;
 public class JarHandler {
 
     private final GraphBuilder builder;
-    private String jarName;
+    private final ConfigReader configReader;
 
-    public JarHandler(GraphBuilder builder) {
+    public JarHandler(GraphBuilder builder, ConfigReader configReader) {
 
         this.builder = builder;
+        this.configReader = configReader;
     }
 
     /**
      * Read the jar file and create graph nodes for .class filed
      */
-    public void readJar(String jarName) {
+    public void readJar() {
 
-        this.jarName = jarName;
-        File file = new File(jarName);
+        File file = new File(configReader.inputJarName);
 
         if (!file.exists()) {
             throw new IllegalArgumentException("Jar file doesn't exist");
@@ -99,14 +99,14 @@ public class JarHandler {
         }
     }
 
-    public void writeJar(String newJarName) {
+    public void writeJar() {
 
-        File file = new File(jarName);
+        File file = new File(configReader.inputJarName);
 
         try (JarFile jar = new JarFile(file)) {
 
             //create a new jar file to add the optimized program files
-            try (JarOutputStream newJar = new JarOutputStream(new FileOutputStream(newJarName))) {
+            try (JarOutputStream newJar = new JarOutputStream(new FileOutputStream(configReader.outputJarName))) {
                 byte[] buffer = new byte[1024];
                 int bytesRead;
 
@@ -119,21 +119,25 @@ public class JarHandler {
                         String className = getEntryClassName(entry.getName());
                         ClassGraphNode classGraphNode = builder.getNodeByName(className);
 
-                        //If the ClassGraphNode is not marked as used don't add it to the final jar file.
-                        if (!classGraphNode.isUsed() && ((classGraphNode.access & Opcodes.ACC_INTERFACE) == 0)) {
+                        if (!classGraphNode.isVisited()) {
+                            continue;
+                        } else if (configReader.optimizeClassesOnly) {
+                            builder.countUsed();
+                            stream = jar.getInputStream(entry);
+                        } else if (classGraphNode.isUsed() || (classGraphNode.access & Opcodes.ACC_INTERFACE) != 0) {
+                            builder.countUsed();
+
+                            //remove unused methods and get the byte array of the modified class
+                            byte[] modifiedClassBytes = builder.removeUnusedMethods(classGraphNode);
+
+                            stream = new ByteArrayInputStream(modifiedClassBytes);
+
+                            //create a new JarEntry for the modified class
+                            entry = new JarEntry(new ZipEntry(entry.getName()));
+                            entry.setSize(modifiedClassBytes.length);
+                        } else {
                             continue;
                         }
-
-                        builder.countUsed();
-
-                        //remove unused methods and get the byte array of the modified class
-                        byte[] modifiedClassBytes = builder.removeUnusedMethods(classGraphNode);
-
-                        stream = new ByteArrayInputStream(modifiedClassBytes);
-
-                        //create a new JarEntry for the modified class
-                        entry = new JarEntry(new ZipEntry(entry.getName()));
-                        entry.setSize(modifiedClassBytes.length);
                     } else {
                         stream = jar.getInputStream(entry);
                     }

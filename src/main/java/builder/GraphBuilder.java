@@ -49,9 +49,11 @@ public class GraphBuilder {
     private int usedCount;
     private ClassGraphNode rootNode;
     private MethodGraphNode mainMethod;
+    private final ConfigReader configReader;
 
-    public GraphBuilder() {
+    public GraphBuilder(ConfigReader configReader) {
 
+        this.configReader = configReader;
         visitedCount = 0;
         usedCount = 0;
         nodes = new HashMap<>();
@@ -60,16 +62,36 @@ public class GraphBuilder {
 
     public void build() {
 
+        setRootNode(configReader.rootName);
         buildClassHierarchy();
         visitNode(rootNode);
-        markMainMethod();
-        findLinkedMethods(rootNode);
+        if (!configReader.optimizeClassesOnly) {
+            markMainMethod();
+            findLinkedMethods(rootNode);
+        }
+        visitKeepClasses();
+    }
+
+    public void visitKeepClasses() {
+
+        for (String keepClassName : configReader.getKeepClasses()) {
+            if (nodes.get(keepClassName) != null) {
+                ClassGraphNode keepNode = nodes.get(keepClassName);
+                keepNode.markAsKeep();
+                visitNode(keepNode);
+                if (!configReader.optimizeClassesOnly) {
+                    for (MethodNode method : keepNode.methods) {
+                        ((MethodGraphNode) method).markAsUsed();
+                    }
+                    findLinkedMethods(keepNode);
+                }
+            }
+        }
     }
 
     public void visitNode(ClassGraphNode node) {
         node.markAsVisited();
         countVisited();
-
         node.accept(new ClassNodeVisitor());
         visitDependentNodes(node);
         if (node.isServiceProvider()) {
