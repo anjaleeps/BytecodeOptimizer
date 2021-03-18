@@ -11,8 +11,8 @@ The config file accepts following configuaration options.
 `inputJar`: Path to the jar file that needs to be optimized (mandatory)   
 `outputJar`: Path to the jar file the optimized program should be written to (mandatory)   
 `mainMethodClass`: Name of the class that contains the main method (mandatory)
-`noUnusedMethodRemoval`: Set to `true` if the optimizer should remove only unused classes without removing unused methods (optional)
-`keepClasses`: A comma separated list of class names that needs to be preserved by default during the optimization. All these classes and their methods will be preserved in the output jar as they are. (optional)
+`noUnusedMethodRemoval`: Set to `true` if the optimizer should remove only unused classes without removing unused methods (optional)   
+`keepClasses`: A comma separated list of class names that needs to be preserved by default during the optimization. All these classes and their methods will be preserved in the output jar as they are. (optional)    
 
 An example configuration file is shown below. 
 
