@@ -42,8 +42,8 @@ public class ConfigReader {
         try (FileReader reader = new FileReader(configFilePath)) {
             properties.load(reader);
             this.inputJarName = properties.getProperty("inputJar");
-            this.rootName = properties.getProperty("rootName");
-            this.optimizeClassesOnly = Boolean.parseBoolean(properties.getProperty("optimizeClassesOnly"));
+            this.rootName = properties.getProperty("mainMethodClass");
+            this.optimizeClassesOnly = Boolean.parseBoolean(properties.getProperty("noUnusedMethodRemoval"));
             this.outputJarName = properties.getProperty("outputJar");
             if (!outputJarName.endsWith(".jar")){
                 throw new IllegalArgumentException("Output file name should be of jar type");

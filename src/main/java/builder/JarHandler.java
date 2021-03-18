@@ -160,7 +160,7 @@ public class JarHandler {
     /**
      * Get the class name from the name of the .class file
      */
-    public String getEntryClassName(String entryName) {
+    private String getEntryClassName(String entryName) {
 
         int n = entryName.lastIndexOf('.');
         return entryName.substring(0, n);
@@ -169,13 +169,13 @@ public class JarHandler {
     /**
      * Get the class name of the service provider from the file in "META-INF/services/"
      */
-    public String getServiceProviderClassName(String providerFileName) {
+    private String getServiceProviderClassName(String providerFileName) {
 
         int i = providerFileName.lastIndexOf('/');
         return providerFileName.substring(i + 1).replace(".", "/");
     }
 
-    public void createNodeForClassFile(String className, byte[] bytes) {
+    private void createNodeForClassFile(String className, byte[] bytes) {
 
         builder.addNewNode(className, bytes);
     }

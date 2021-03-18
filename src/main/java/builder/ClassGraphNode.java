@@ -45,7 +45,6 @@ public class ClassGraphNode extends ClassNode {
     private boolean visited;
     private boolean used;
     private boolean isServiceProvider;
-    private boolean keep;
     private DependencyCollector collector;
 
     public ClassGraphNode(String name) {
@@ -55,7 +54,6 @@ public class ClassGraphNode extends ClassNode {
         visited = false;
         used = false;
         isServiceProvider = false;
-        keep = false;
         collector = new DependencyCollector();
     }
 
@@ -84,14 +82,6 @@ public class ClassGraphNode extends ClassNode {
         return isServiceProvider;
     }
 
-    public void markAsKeep() {
-        keep = true;
-    }
-
-    public boolean isKept() {
-        return keep;
-    }
-
     public void markAsServiceProvider() {
 
         isServiceProvider = true;
@@ -100,21 +90,6 @@ public class ClassGraphNode extends ClassNode {
     public Set<String> getDependencies(){
 
         return collector.getDependencies();
-    }
-
-    public void addNewMethodUsedIn(MethodGraphNode methodUsedIn) {
-
-        methodsUsedIn.add(methodUsedIn);
-    }
-
-    public boolean removeMethodUsedIn(MethodGraphNode methodUsedIn) {
-
-        methodsUsedIn.remove(methodUsedIn);
-        if (methodsUsedIn.size() == 0) {
-            used = false;
-            return false;
-        }
-        return true;
     }
 
     public void addChildNode(ClassGraphNode childNode) {
