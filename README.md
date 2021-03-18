@@ -8,11 +8,13 @@ java -jar optimizer.jar ./optimizer.config
 ```
 The config file accepts following configuaration options. 
 
-`inputJar`: Path to the jar file that needs to be optimized (mandatory)   
-`outputJar`: Path to the jar file the optimized program should be written to (mandatory)   
-`mainMethodClass`: Name of the class that contains the main method (mandatory)     
-`noUnusedMethodRemoval`: Set to `true` if the optimizer should remove only unused classes without removing unused methods (optional)   
-`keepClasses`: A comma separated list of class names that needs to be preserved by default during the optimization. All these classes and their methods will be preserved in the output jar as they are. (optional)    
+>
+>`inputJar`: Path to the jar file that needs to be optimized (mandatory)   
+>`outputJar`: Path to the jar file the optimized program should be written to (mandatory)   
+>`mainMethodClass`: Name of the class that contains the main method (mandatory)     
+>`noUnusedMethodRemoval`: Set to `true` if the optimizer should remove only unused classes without removing unused methods (optional)   
+>`keepClasses`: A comma separated list of class names that needs to be preserved by default during the optimization. All these classes and their methods will be >preserved in the output jar as they are. (optional)    
+>
 
 An example configuration file is shown below. 
 
@@ -31,11 +33,18 @@ keepClasses:user/demo/KeepClass1,user/demo/KeepClass2,user/demo/KeepClass3
 To identify unused methods in the jar file, and by extension unused classes, Bytecode Optimizer constructs the callgraph of the given program, using Class Hierarchy Analysis (CHA) algorithm, starting from the main method defined in the entry class. To conduct the analysis, Bytecode Optimizer utilizes ASM's tree-based visitors including ClassNode and MethodNode. On top of the callgraph construction, ASM ClassNode is used to identified field types used in the program that are not captured through the callgraph contstruction. 
 
 The current high-level design of the optimizer is as follows. 
-![alt text](https://github.com/anjaleeps/BytecodeOptimizer/blob/main/Bytecode%20Optimizer%20design.png)
+![design](/design.png)
+
+The optimization process is carried out in three main steps. 
+1. Build class hierarchy
+2. Identify used classes
+3. Identify used methods 
+
 
 ## Building Class Hierarchy
 
 As the first step, to help the CHA analysis, the program maps the class heirarchy among the class nodes in the graph. 
+
 ```Java
 public void buildClassHierarchy() {
 
@@ -52,26 +61,48 @@ public void buildClassHierarchy() {
 }
 ```
 
-## Visiting method calls
+## Identifying Used Classes
 
-Then, the optimizer starts visiting used methods in the program starting from the main method. 
+To identify dependent classes of a used class, `ClassNodeVisitor` object is passed to each used class starting from the root node, the node which contains the main method. Dependent classes are then recognized as used classes and the process continues until all the used classes in the jar are identified by statically analyzing bytecode. 
 
 ```java
-findLinkedMethods(rootNode);
+public void visitNode(ClassGraphNode node) {
+    node.markAsVisited();
+    node.accept(new ClassNodeVisitor());
+    visitDependentNodes(node);
+    if (node.isServiceProvider()) {
+        visitChildNodes(node);
+    }
+}
+
+private void visitDependentNodes(ClassGraphNode node) {
+    for (String className: node.getDependencies()) {
+        if (nodes.get(className) != null && !nodes.get(className).isVisited()) {
+            visitNode(nodes.get(className));
+        }
+    }
+}
+
+private void visitChildNodes(ClassGraphNode node) {
+    for (ClassGraphNode childNode : node.getChildNodes()) {
+        if (!childNode.isVisited()){
+            visitNode(childNode);
+        }
+    }
+}
 ```
-`findLinkedMethods` method contains the main logic for building the call graph. It checks used method nodes in a class node and visit its field dependencies and called methods. 
+
+## Identifying Used Methods
+To identify the used methods, the optimizer builds the callgraph of the program following an approach similar to Class Hierarchy Analysis. The main method in the root node is considered as the entry point to the callgraph construction. 
 
 ```java
-public void findLinkedMethods(ClassGraphNode node) {
+private void findLinkedMethods(ClassGraphNode node) {
 
-    //visit the unvisited but used methods in the class node
     visitNodeForMethods(node);
 
     for (MethodNode methodNode : node.methods) {
         MethodGraphNode method = (MethodGraphNode) methodNode;
 
-        //check the instructions used in a used method to find out called methods
-        //pass if the called methods have already been visited
         if (method.isUsed() && !method.isCalledVisited()) {
 
             method.markAsCalledVisited();
@@ -96,6 +127,8 @@ public void findLinkedMethods(ClassGraphNode node) {
     }
 }
 ```
+`FindLinkedMethod` is then recursively called to identify methods called inside a used method until all the used methods are identified. 
+
 # License
 
 Distributed under the Apache 2.0 license. See [License](https://github.com/anjaleeps/BytecodeOptimizer/blob/main/LICENSE) for more information.
