@@ -1,14 +1,30 @@
 # Bytecode Optimizer
-A Java program to optimize a Java jar file. The optimizer was designed as a part of the Ballerina language platform. However, it can be used for any language that compiles to Java bytecode. Under the current implementation, the optimizer is capable of removing unused methods and classes in a jar file. 
+A Java program to optimize jar files. The optimizer was designed as a part of the Ballerina language platform. However, it can be used for any language that compiles into Java bytecode. The optimizer is capable of removing unused methods and classes in a jar file. It is capable of reducing the size of Ballerina-generated jar files by 40%-65%.
 
 # Usage
-Clone the Bytecode Optimizer repository and build the fat jar using gradle.
+Extract the optimizer fat jar and run it using the `java -jar` command. Pass the path to the config file containing config options as an argument. 
 ```
-gradle jar 
+java -jar optimizer.jar ./optimizer.config
 ```
-When executing the fat jar, pass the name of the input and output jar files and the name of the entry class that contains the main method.
+The config file accepts following configuaration options. 
+
+`inputJar`: Path to the jar file that needs to be optimized (mandatory)   
+`outputJar`: Path to the jar file the optimized program should be written to (mandatory)   
+`mainMethodClass`: Name of the class that contains the main method (mandatory)
+`noUnusedMethodRemoval`: Set to `true` if the optimizer should remove only unused classes without removing unused methods (optional)
+`keepClasses`: A comma separated list of class names that needs to be preserved by default during the optimization. All these classes and their methods will be preserved in the output jar as they are. (optional)
+
+An example configuration file is shown below. 
+
 ```
-java -jar BytecodeOptimizer.jar inputjar.jar name/of/entry/class outputjar.jar
+//optimizer.config
+
+inputJar:input.jar
+outputJar:output.jar
+mainMethodClass:user/demo/Main
+noUnusedMethodRemoval:false
+keepClasses:user/demo/KeepClass1,user/demo/KeepClass2,user/demo/KeepClass3
+
 ```
 
 # Implementation
