@@ -35,65 +35,55 @@ import java.util.Set;
 import static org.objectweb.asm.Opcodes.ASM9;
 
 /**
- * A class node visitor that returns a method node visitor for every used and not visited method when visiting methods
- * in the class so that the each used method will be visited by the method visitor
+ * A class node visitor that returns a method node visitor for every used and not visited method when visiting methods.
+ * in the class so that the each used method will be visited by the method visitor.
  */
 public class ClassVisitorForMethods extends ClassNode {
 
     private Set<String> names = new HashSet<>();
 
     public ClassVisitorForMethods() {
-
         super(ASM9);
     }
 
     @Override
     public void visit(int version, int access, String name, String signature, String superName,
                       String[] interfaces) {
-
     }
 
     @Override
     public void visitSource(String file, String debug) {
-
     }
 
     @Override
     public ModuleVisitor visitModule(String name, int access, String version) {
-
         return null;
     }
 
     @Override
     public void visitOuterClass(String owner, String name, String desc) {
-
     }
 
     @Override
     public void visitInnerClass(String name, String outerName, String innerName, int access) {
-
     }
 
     @Override
     public void visitAttribute(Attribute attr){
-
     }
 
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-
         return null;
     }
 
     @Override
     public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String desc, boolean visible) {
-
         return null;
     }
 
     @Override
     public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
-
         return null;
     }
 
@@ -102,25 +92,14 @@ public class ClassVisitorForMethods extends ClassNode {
      */
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-
         MethodGraphNode mn = new MethodGraphNode(access, this.name, name, desc, signature, exceptions);
         int i = methods.indexOf(mn);
-
         mn = (MethodGraphNode) methods.get(i);
-
         if (mn.isUsed() && !mn.isVisited()) {
-
             mn.markAsVisited();
             mn.setCollector(new DependencyCollector());
             return mn;
         }
-
         return null;
     }
-
-    @Override
-    public void visitEnd() {
-
-    }
-
 }

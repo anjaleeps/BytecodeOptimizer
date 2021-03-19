@@ -19,10 +19,15 @@
 
 package builder;
 
+/**
+ * The main class of the optimizer.
+ */
 public class Main {
 
     public static void main(String[] args) {
-
+        if (args[0].isEmpty()) {
+            throw new IllegalArgumentException("No config file provided");
+        }
         String configFilePath = args[0].trim();
         ConfigReader configReader = new ConfigReader(configFilePath);
         GraphBuilder builder = new GraphBuilder(configReader);
@@ -35,7 +40,5 @@ public class Main {
         System.out.println("Total Nodes: " + builder.getGraphSize());
         System.out.println("Visited Nodes: " + builder.getVisitedCount());
         System.out.println("Used Nodes: " + builder.getUsedCount());
-        System.out.println("Total methods: " + GraphBuilder.totalMethodCount);
-        System.out.println("visited methods: " + GraphBuilder.visitedMethodCount);
     }
 }

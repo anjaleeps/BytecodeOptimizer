@@ -28,6 +28,9 @@ import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+/**
+ * This class is used to read the values passed in the configuration file
+ */
 public class ConfigReader {
 
     final String inputJarName;
@@ -38,14 +41,13 @@ public class ConfigReader {
 
     public ConfigReader(String configFilePath) {
         Properties properties = new Properties();
-
         try (FileReader reader = new FileReader(configFilePath)) {
             properties.load(reader);
             this.inputJarName = properties.getProperty("inputJar");
             this.rootName = properties.getProperty("mainMethodClass");
             this.optimizeClassesOnly = Boolean.parseBoolean(properties.getProperty("noUnusedMethodRemoval"));
             this.outputJarName = properties.getProperty("outputJar");
-            if (!outputJarName.endsWith(".jar")){
+            if (!outputJarName.endsWith(".jar")) {
                 throw new IllegalArgumentException("Output file name should be of jar type");
             }
             addKeepClasses(properties.getProperty("keepClasses"));

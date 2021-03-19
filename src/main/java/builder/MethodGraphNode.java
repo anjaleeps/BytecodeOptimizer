@@ -22,7 +22,6 @@ package builder;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
-import org.objectweb.asm.Type;
 import org.objectweb.asm.TypePath;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -33,7 +32,7 @@ import static org.objectweb.asm.Opcodes.ASM9;
 
 /**
  * A class representing a node for each method inside a ClassGraphNode.
- * Can act as a method node and a method node visitor
+ * Can act as a method node and a method node visitor.
  */
 public class MethodGraphNode extends MethodNode {
 
@@ -46,7 +45,6 @@ public class MethodGraphNode extends MethodNode {
     private boolean calledVisited;
 
     public MethodGraphNode(int access, String owner, String name, String desc, String signature, String[] exceptions) {
-
         super(ASM9, access, name, desc, signature, exceptions);
         this.owner = owner;
         used = false;
@@ -55,12 +53,10 @@ public class MethodGraphNode extends MethodNode {
     }
 
     public void setCollector(DependencyCollector collector) {
-
         this.collector = collector;
     }
 
-    public Set<String> getDependentClassNames(){
-
+    public Set<String> getDependentClassNames() {
         return collector.getDependencies();
     }
 
@@ -73,12 +69,10 @@ public class MethodGraphNode extends MethodNode {
     }
 
     public void markAsUsed() {
-
         used = true;
     }
 
     public void markAsVisited() {
-
         visited = true;
     }
 
@@ -86,41 +80,34 @@ public class MethodGraphNode extends MethodNode {
      * Mark the method when every method call made inside the current method node is visited
      */
     public void markAsCalledVisited() {
-
         calledVisited = true;
     }
 
     public boolean isUsed() {
-
         return used;
     }
 
     public boolean isVisited() {
-
         return visited;
     }
 
     public boolean isCalledVisited() {
-
         return calledVisited;
     }
 
     @Override
     public AnnotationVisitor visitAnnotationDefault() {
-
         return null;
     }
 
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-
         collector.addDesc(desc);
         return null;
     }
 
     @Override
     public AnnotationVisitor visitParameterAnnotation(int parameter, String desc, boolean visible) {
-
         collector.addDesc(desc);
         return null;
     }
@@ -139,7 +126,6 @@ public class MethodGraphNode extends MethodNode {
 
     @Override
     public void visitFieldInsn(int opcode, String owner, String name, String desc) {
-
         collector.addInternalName(owner);
     }
 
@@ -148,7 +134,6 @@ public class MethodGraphNode extends MethodNode {
      */
     @Override
     public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
-
         collector.addInternalName(owner);
         collector.addMethodDesc(desc);
         super.visitMethodInsn(opcode, owner, name, desc, itf);
@@ -159,44 +144,36 @@ public class MethodGraphNode extends MethodNode {
      */
     @Override
     public void visitInvokeDynamicInsn(String name, String desc, Handle bsm, Object... bsmArgs) {
-
         super.visitInvokeDynamicInsn(name, desc, bsm, bsmArgs);
     }
 
     @Override
     public void visitLdcInsn(Object constant) {
-
         collector.addConstant(constant);
     }
 
     @Override
     public void visitMultiANewArrayInsn(String desc, int dims) {
-
     }
 
     @Override
     public void visitLocalVariable(String name, String desc, String signature, Label start, Label end, int index) {
-
     }
 
     @Override
     public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {
-
     }
 
     @Override
     public boolean equals(Object obj) {
-
         if (obj instanceof MethodGraphNode) {
             MethodGraphNode mn = (MethodGraphNode) obj;
-
             return owner.equals(mn.owner) && name.equals(mn.name) && desc.equals(mn.desc);
         }
         return false;
     }
 
     public MethodGraphNode getCopy() {
-
         return new MethodGraphNode(access, owner, name, desc, null, null);
     }
 

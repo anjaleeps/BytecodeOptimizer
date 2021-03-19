@@ -43,13 +43,12 @@ public class ClassNodeVisitor extends ClassNode {
     private DependencyCollector collector;
 
     public ClassNodeVisitor() {
-
         super(ASM9);
         isAnonymousClass = false;
 
     }
 
-    public void setCollector(DependencyCollector collector){
+    public void setCollector(DependencyCollector collector) {
         this.collector = collector;
     }
 
@@ -59,11 +58,10 @@ public class ClassNodeVisitor extends ClassNode {
     @Override
     public void visit(int version, int access, String name, String signature, String superName,
                       String[] interfaces) {
-
         this.name = name;
         this.access = access;
         String[] parts = name.split("[$]");
-        if (parts.length > 1 && parts[parts.length - 1].matches("\\d+")){
+        if (parts.length > 1 && parts[parts.length - 1].matches("\\d+")) {
             isAnonymousClass = true;
         }
         if (signature == null) {
@@ -78,12 +76,10 @@ public class ClassNodeVisitor extends ClassNode {
 
     @Override
     public void visitSource(String file, String debug) {
-
     }
 
     @Override
     public ModuleVisitor visitModule(String name, int access, String version) {
-
         return null;
     }
 
@@ -96,7 +92,6 @@ public class ClassNodeVisitor extends ClassNode {
 
     @Override
     public void visitInnerClass(String name, String outerName, String innerName, int access) {
-
     }
 
     @Override
@@ -109,14 +104,12 @@ public class ClassNodeVisitor extends ClassNode {
 
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-
         collector.addDesc(desc);
         return new AnnotationNodeVisitor(collector);
     }
 
     @Override
     public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String desc, boolean visible) {
-
         collector.addDesc(desc);
         return new AnnotationNodeVisitor(collector);
     }
@@ -126,17 +119,14 @@ public class ClassNodeVisitor extends ClassNode {
      */
     @Override
     public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
-
         if (signature == null) {
             collector.addDesc(desc);
         } else {
             collector.addSignature(signature);
         }
-
         if (value instanceof Type) {
             collector.addType((Type) value);
         }
-
         return new FieldNodeVisitor(collector);
     }
 
@@ -145,7 +135,6 @@ public class ClassNodeVisitor extends ClassNode {
      */
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-
         MethodGraphNode mn = new MethodGraphNode(access, this.name, name, desc, signature, exceptions);
         if (name.equals("<init>") || name.equals("<clinit>") || isAnonymousClass) {
             mn.markAsUsed();
@@ -159,10 +148,4 @@ public class ClassNodeVisitor extends ClassNode {
         collector.addInternalNames(exceptions);
         return new MethodNodeVisitor(collector);
     }
-
-    @Override
-    public void visitEnd() {
-
-    }
-
 }

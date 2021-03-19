@@ -24,19 +24,20 @@ import org.objectweb.asm.FieldVisitor;
 
 import static org.objectweb.asm.Opcodes.ASM9;
 
+/**
+ * A visitor class used to visit fields and collect used class types.
+ */
 public class FieldNodeVisitor extends FieldVisitor {
 
     private DependencyCollector collector;
 
     public FieldNodeVisitor(DependencyCollector collector) {
-
         super(ASM9);
         this.collector = collector;
     }
 
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-
         collector.addDesc(desc);
         return new AnnotationNodeVisitor(collector);
     }

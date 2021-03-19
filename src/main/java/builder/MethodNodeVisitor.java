@@ -28,59 +28,54 @@ import org.objectweb.asm.TypePath;
 
 import static org.objectweb.asm.Opcodes.ASM9;
 
+/**
+ * A visitor class used to visit methods collect used class types.
+ */
 public class MethodNodeVisitor extends MethodVisitor {
 
     private DependencyCollector collector;
 
     public MethodNodeVisitor(DependencyCollector collector) {
-
         super(ASM9);
         this.collector = collector;
     }
 
     @Override
     public AnnotationVisitor visitAnnotationDefault() {
-
         return new AnnotationNodeVisitor(collector);
     }
 
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
-
         collector.addDesc(desc);
         return new AnnotationNodeVisitor(collector);
     }
 
     @Override
     public AnnotationVisitor visitParameterAnnotation(int parameter, String desc, boolean visible) {
-
         collector.addDesc(desc);
         return new AnnotationNodeVisitor(collector);
     }
 
     @Override
     public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String desc, boolean visible) {
-
         collector.addDesc(desc);
         return new AnnotationNodeVisitor(collector);
     }
 
     @Override
     public void visitTypeInsn(int opcode, String type) {
-
         collector.addType(Type.getObjectType(type));
     }
 
     @Override
     public void visitFieldInsn(int opcode, String owner, String name, String desc) {
-
         collector.addInternalName(owner);
         collector.addDesc(desc);
     }
 
     @Override
     public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
-
         collector.addInternalName(owner);
         collector.addMethodDesc(desc);
     }
@@ -97,25 +92,21 @@ public class MethodNodeVisitor extends MethodVisitor {
 
     @Override
     public void visitLdcInsn(Object constant) {
-
         collector.addConstant(constant);
     }
 
     @Override
     public void visitMultiANewArrayInsn(String desc, int dims) {
-
         collector.addDesc(desc);
     }
 
     @Override
     public void visitLocalVariable(String name, String desc, String signature, Label start, Label end, int index) {
-
         collector.addTypeSignature(signature);
     }
 
     @Override
     public void visitTryCatchBlock(Label start, Label end, Label handler, String type) {
-
         if (type != null) {
             collector.addInternalName(type);
         }

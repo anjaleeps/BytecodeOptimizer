@@ -26,19 +26,17 @@ import org.objectweb.asm.tree.ClassNode;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import static org.objectweb.asm.Opcodes.ASM9;
 
 /**
- * A class representing a node created for each class file in the jar file
+ * A class representing a node created for each class file in the jar file.
  */
 public class ClassGraphNode extends ClassNode {
 
     private List<ClassGraphNode> childNodes = new ArrayList<>();
-    private Set<MethodGraphNode> methodsUsedIn = new HashSet<>();
     private ClassReader reader;
     private ClassGraphNode superNode;
     private List<ClassGraphNode> interfaceNodes;
@@ -48,7 +46,6 @@ public class ClassGraphNode extends ClassNode {
     private DependencyCollector collector;
 
     public ClassGraphNode(String name) {
-
         super(ASM9);
         this.name = name;
         visited = false;
@@ -58,65 +55,53 @@ public class ClassGraphNode extends ClassNode {
     }
 
     public boolean isVisited() {
-
         return visited;
     }
 
     public boolean isUsed() {
-
         return used;
     }
 
     public void markAsVisited() {
-
         visited = true;
     }
 
     public void markAsUsed() {
-
         used = true;
     }
 
     public boolean isServiceProvider() {
-
         return isServiceProvider;
     }
 
     public void markAsServiceProvider() {
-
         isServiceProvider = true;
     }
 
-    public Set<String> getDependencies(){
-
+    public Set<String> getDependencies() {
         return collector.getDependencies();
     }
 
     public void addChildNode(ClassGraphNode childNode) {
-
         childNodes.add(childNode);
     }
 
     public void setReader(byte[] bytes) {
-
         reader = new ClassReader(bytes);
     }
 
     public void setReader() {
-
         try {
             this.reader = new ClassReader(this.name);
-        } catch (IOException e) {
+        } catch (IOException ignored) {
         }
     }
 
     public List<ClassGraphNode> getChildNodes() {
-
         return childNodes;
     }
 
     public String getSuperName() {
-
         if (reader == null) {
             return null;
         }
@@ -125,17 +110,14 @@ public class ClassGraphNode extends ClassNode {
     }
 
     public ClassGraphNode getSuperNode() {
-
         return superNode;
     }
 
     public void setSuperNode(ClassGraphNode superNode) {
-
         this.superNode = superNode;
     }
 
     public String[] getInterfaceNames() {
-
         if (reader == null) {
             return null;
         }
@@ -144,12 +126,10 @@ public class ClassGraphNode extends ClassNode {
     }
 
     public List<ClassGraphNode> getInterfaceNodes() {
-
         return interfaceNodes;
     }
 
     public void setInterfaceNodes(List<ClassGraphNode> interfaceNodes) {
-
         this.interfaceNodes = interfaceNodes;
     }
 
@@ -158,18 +138,16 @@ public class ClassGraphNode extends ClassNode {
      **/
     @Override
     public void accept(ClassVisitor cv) {
-
         ClassNode cn = (ClassNode) cv;
         cn.name = name;
         cn.methods = methods;
         cn.access = access;
         cn.superName = superName;
 
-        if (cn instanceof ClassNodeVisitor){
+        if (cn instanceof ClassNodeVisitor) {
             ClassNodeVisitor cnv = (ClassNodeVisitor) cn;
             cnv.setCollector(collector);
         }
-
         reader.accept(cn, 0);
         this.methods = cn.methods;
         this.access = cn.access;
